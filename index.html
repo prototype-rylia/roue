@@ -8,6 +8,10 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
+    <!-- ✅ Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root { 
             --primary: #FF8C00; 
@@ -210,17 +214,41 @@
 </div>
 
 <script>
+    // ============================================================
+    // ✅ CONFIGURATION FIREBASE — remplacez par vos propres valeurs
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjLfEdyvYlKKJA7p-2cSkP2kNv0pjjZz0",
+      authDomain: "dashboard-roue.firebaseapp.com",
+      projectId: "dashboard-roue",
+      storageBucket: "dashboard-roue.firebasestorage.app",
+      messagingSenderId: "109735141824",
+      appId: "1:109735141824:web:2e80a4400db5af5674e825"
+    };
+
+    // ✅ UID du client (copié depuis Firebase Authentication > Users)
+    // Chaque fichier wheel.html est propre à un client — mettez son UID ici
+    const CLIENT_ID = "5Zee4LRp05WCWrW695eaHoj3PKK2";
+
+    // Initialisation Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // ============================================================
+    // ✅ EmailJS — conservé tel quel
+    // ============================================================
     (function() { emailjs.init("Xfwt-_9NJQOGH4NLH"); })();
 
-    const appScriptUrl = 'https://script.google.com/macros/s/AKfycbwPi-ttz7RSkd9ztsdJbKuafbIf_T7htQWuYmRXISvwAT1uBgJT4zH0BYtN2s7cFC1mrw/exec';
-
+    // ============================================================
+    // Configuration des lots
+    // ============================================================
     const prizeConfig = [
-        { label: "Menu taille M", chance: 2.0, color: "rgba(255, 140, 0, 0.5)" },
-        { label: "-10% commande", chance: 2.5, color: "#FFFFFF" },
-        { label: "Dessert au choix", chance: 2.5, color: "rgba(255, 140, 0, 0.5)" },
-        { label: "-5% commande", chance: 6.0, color: "#FFFFFF" },
-        { label: "x4 Snack", chance: 7.0, color: "rgba(255, 140, 0, 0.5)" },
-        { label: "Une boisson", chance: 80.0, color: "#FFFFFF" }
+        { label: "Menu taille M",    chance: 2.0,  color: "rgba(255, 140, 0, 0.5)" },
+        { label: "-10% commande",    chance: 2.5,  color: "#FFFFFF" },
+        { label: "Dessert au choix", chance: 2.5,  color: "rgba(255, 140, 0, 0.5)" },
+        { label: "-5% commande",     chance: 6.0,  color: "#FFFFFF" },
+        { label: "x4 Snack",         chance: 7.0,  color: "rgba(255, 140, 0, 0.5)" },
+        { label: "Une boisson",      chance: 80.0, color: "#FFFFFF" }
     ];
 
     const canvas = document.getElementById("wheelCanvas");
@@ -247,71 +275,71 @@
         });
     }
 
-      function openLegalPage() {
-          const legalWindow = window.open("", "_blank");
-          legalWindow.document.write(`
-              <html>
-              <head>
-                  <title>CGU & Mentions Légales</title>
-                  <style>
-                      body { 
-                          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-                          line-height: 1.6; 
-                          padding: 50px; 
-                          color: #2d2d2d; 
-                          max-width: 750px; 
-                          margin: auto; 
-                      }
-                      h1 { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-                      h2 { font-size: 1.2rem; font-weight: 700; margin-top: 30px; }
-                      h3 { font-size: 1rem; font-weight: 700; color: #555; }
-                      p, li { font-size: 0.95rem; color: #444; }
-                      ul { padding-left: 20px; }
-                      hr { border: 0; border-top: 1px solid #eee; margin: 40px 0; }
-                  </style>
-              </head>
-              <body>
-                  <h1>Mentions Légales & CGU</h1>
+    function openLegalPage() {
+        const legalWindow = window.open("", "_blank");
+        legalWindow.document.write(`
+            <html>
+            <head>
+                <title>CGU & Mentions Légales</title>
+                <style>
+                    body { 
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+                        line-height: 1.6; 
+                        padding: 50px; 
+                        color: #2d2d2d; 
+                        max-width: 750px; 
+                        margin: auto; 
+                    }
+                    h1 { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                    h2 { font-size: 1.2rem; font-weight: 700; margin-top: 30px; }
+                    h3 { font-size: 1rem; font-weight: 700; color: #555; }
+                    p, li { font-size: 0.95rem; color: #444; }
+                    ul { padding-left: 20px; }
+                    hr { border: 0; border-top: 1px solid #eee; margin: 40px 0; }
+                </style>
+            </head>
+            <body>
+                <h1>Mentions Légales & CGU</h1>
 
-                  <section>
-                      <h2>I. ÉDITION ET HÉBERGEMENT</h2>
-                      <p><strong>Éditeur :</strong> Ce site est édité par l'établissement <strong>[NOM DU RESTAURANT]</strong>, [FORME JURIDIQUE] au capital de [MONTANT] €, situé à [ADRESSE COMPLÈTE]. SIRET : [NUMÉRO].</p>
-                      <p><strong>Hébergement :</strong> Ce site est hebergé par GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.</p>
-                      <p><strong>Conception technique :</strong> Rylia | contact@rylia.fr
-                  </section>
+                <section>
+                    <h2>I. ÉDITION ET HÉBERGEMENT</h2>
+                    <p><strong>Éditeur :</strong> Ce site est édité par l'établissement <strong>[NOM DU RESTAURANT]</strong>, [FORME JURIDIQUE] au capital de [MONTANT] €, situé à [ADRESSE COMPLÈTE]. SIRET : [NUMÉRO].</p>
+                    <p><strong>Hébergement :</strong> Ce site est hebergé par GitHub Inc., 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis.</p>
+                    <p><strong>Conception technique :</strong> Rylia | contact@rylia.fr</p>
+                </section>
 
-                  <section>
-                      <h2>II. CONDITIONS GÉNÉRALES D'UTILISATION</h2>
-                      
-                      <h3>1. Objet du programme</h3>
-                      <p>L'utilisateur est invité à déposer un avis Google, le jeu est gratuit sans obligation d'achat. Les lots gagnés consistent en des avantages commerciaux soumis à conditions de consommation dans l'établissement</p>
+                <section>
+                    <h2>II. CONDITIONS GÉNÉRALES D'UTILISATION</h2>
+                    
+                    <h3>1. Objet du programme</h3>
+                    <p>L'utilisateur est invité à déposer un avis Google, le jeu est gratuit sans obligation d'achat. Les lots gagnés consistent en des avantages commerciaux soumis à conditions de consommation dans l'établissement</p>
 
-                      <h3>2. Participation</h3>
-                      <p>La participation est limitée à une seule tentative par personne et par période de 24 heures. Un contrôle technique (cookies/localStorage) est mis en place pour assurer le respect de cette règle.</p>
-                  </section>
+                    <h3>2. Participation</h3>
+                    <p>La participation est limitée à une seule tentative par personne et par période de 24 heures. Un contrôle technique (cookies/localStorage) est mis en place pour assurer le respect de cette règle.</p>
+                </section>
 
-                  <section>
-                      <h2>III. PROTECTION DES DONNÉES (RGPD)</h2>
-                      <p>Les informations collectées (Prénom, E-mail) sont nécessaires pour l'envoi du coupon de réduction et, sous réserve de votre consentement, pour l'envoi d'offres promotionnelles par le restaurant.</p>
-                      <p>• Responsable du traitement : [NOM DU RESTAURANT].<br>
-                      • Finalité : Gestion du jeu-concours et prospection commerciale.<br>
-                      • Destinataires : Le personnel habilité du restaurant. Les données sont stockées via des outils sécurisés (Google Sheets / EmailJS).<br>
-                      • Durée de conservation : Les données sont conservées pour une durée maximale de 3 ans à compter du dernier contact avec le client.<br>
-                      • Vos droits : Conformément à la loi "Informatique et Libertés", vous disposez d'un droit d'accès, de rectification, de suppression et d'opposition concernant vos données. Pour l'exercer, contactez : [E-MAIL DU RESTAURANT].</p>
-                  </section>
+                <section>
+                    <h2>III. PROTECTION DES DONNÉES (RGPD)</h2>
+                    <p>Les informations collectées (Prénom, E-mail) sont nécessaires pour l'envoi du coupon de réduction et, sous réserve de votre consentement, pour l'envoi d'offres promotionnelles par le restaurant.</p>
+                    <p>• Responsable du traitement : [NOM DU RESTAURANT].<br>
+                    • Finalité : Gestion du jeu-concours et prospection commerciale.<br>
+                    • Destinataires : Le personnel habilité du restaurant. Les données sont stockées via des outils sécurisés (Firebase / EmailJS).<br>
+                    • Durée de conservation : Les données sont conservées pour une durée maximale de 3 ans à compter du dernier contact avec le client.<br>
+                    • Vos droits : Conformément à la loi "Informatique et Libertés", vous disposez d'un droit d'accès, de rectification, de suppression et d'opposition concernant vos données. Pour l'exercer, contactez : [E-MAIL DU RESTAURANT].</p>
+                </section>
 
-                  <section>
-                      <h2>IV. MÉDIATION DE LA CONSOMMATION</h2>
-                      <p>Conformément aux articles L.616-1 et R.616-1 du code de la consommation, en cas de litige non résolu directement avec l'établissement, le client peut recourir gratuitement au médiateur de la consommation saisi par le restaurant :</p>
-                      <p>[NOM DU MÉDIATEUR DE L'ÉTABLISSEMENT]<br>Adresse : [ADRESSE DU MÉDIATEUR]<br>Site internet : [SITE DU MÉDIATEUR]</p>
-                  </section>
+                <section>
+                    <h2>IV. MÉDIATION DE LA CONSOMMATION</h2>
+                    <p>Conformément aux articles L.616-1 et R.616-1 du code de la consommation, en cas de litige non résolu directement avec l'établissement, le client peut recourir gratuitement au médiateur de la consommation saisi par le restaurant :</p>
+                    <p>[NOM DU MÉDIATEUR DE L'ÉTABLISSEMENT]<br>Adresse : [ADRESSE DU MÉDIATEUR]<br>Site internet : [SITE DU MÉDIATEUR]</p>
+                </section>
 
-                  <hr>
-                  <p style="font-size: 0.8rem; color: #999;">Dernière mise à jour : 24/02/2026</p>
-              </body>
-              </html>
-          `);
-      }
+                <hr>
+                <p style="font-size: 0.8rem; color: #999;">Dernière mise à jour : 24/02/2026</p>
+            </body>
+            </html>
+        `);
+    }
 
     function checkCooldown() {
         const lastSpin = localStorage.getItem("lastSpinTimestamp");
@@ -405,60 +433,64 @@
         document.getElementById("email-area").style.display = "block";
     }
 
-    function submitAndFinish() {
-            const nom = document.getElementById("client-name").value;
-            const mail = document.getElementById("client-email").value;
-            
-            // VERIFICATION DE LA CASE A COCHER
-            const consent = document.getElementById("marketing-consent").checked;
-            if (!mail.includes("@") || nom.length < 2) return alert("Veuillez remplir les champs.");
-            if (!consent) return alert("Veuillez cocher la case pour accepter de recevoir votre coupon.");
-            
-            const btn = document.getElementById("final-submit");
-            btn.disabled = true; 
-            btn.innerText = "Envoi...";
-            
-            const maintenant = new Date();
-            const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-            
-            const heureGain = maintenant.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-            const dateExp = new Date(maintenant.getTime() + 864000000).toLocaleDateString('fr-FR');
-            const dateDispo = new Date(maintenant.getTime() + 86400000).toLocaleDateString('fr-FR');
+    async function submitAndFinish() {
+        const nom = document.getElementById("client-name").value;
+        const mail = document.getElementById("client-email").value;
+        const consent = document.getElementById("marketing-consent").checked;
 
-            const dataToSend = {
-                "date_expiration": dateExp,
-                "client_email": mail,
-                "gain_nom": wonPrize,
-                "code_unique": code,
-                "client_nom": nom
-            };
+        if (!mail.includes("@") || nom.length < 2) return alert("Veuillez remplir les champs.");
+        if (!consent) return alert("Veuillez cocher la case pour accepter de recevoir votre coupon.");
 
-            fetch(appScriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataToSend)
+        const btn = document.getElementById("final-submit");
+        btn.disabled = true;
+        btn.innerText = "Envoi...";
+
+        const maintenant = new Date();
+        const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const heureGain  = maintenant.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        const dateExp    = new Date(maintenant.getTime() + 864000000).toLocaleDateString('fr-FR');
+        const dateDispo  = new Date(maintenant.getTime() + 86400000).toLocaleDateString('fr-FR');
+
+        // ============================================================
+        // ✅ SAUVEGARDE FIRESTORE — remplace l'ancien appel Google Sheets
+        // Collection : clients/{CLIENT_ID}/participants
+        // ============================================================
+        try {
+            await db.collection("clients").doc(CLIENT_ID).collection("participants").add({
+                nom:              nom,
+                email:            mail,
+                gain:             wonPrize,
+                code:             code,
+                date:             firebase.firestore.FieldValue.serverTimestamp(),
+                date_expiration:  dateExp,
+                consent_marketing: consent
             });
-
-            emailjs.send('service_71cru5u', 'template_bj379nv', {
-                client_nom: nom,
-                client_email: mail,
-                gain_nom: wonPrize,
-                code_unique: code,
-                date_limite: dateExp,
-                date_dispo: dateDispo,
-                heure_gain: heureGain
-            }).then(() => {
-                document.getElementById("email-area").style.display = "none";
-                document.getElementById("success-area").style.display = "block";
-                checkCooldown();
-            }).catch((err) => {
-                console.error("Erreur mail:", err);
-                document.getElementById("email-area").style.display = "none";
-                document.getElementById("success-area").style.display = "block";
-            });
+        } catch (err) {
+            console.error("Erreur Firestore :", err);
+            // On continue quand même pour envoyer le mail
         }
+
+        // ============================================================
+        // ✅ EMAILJS — conservé tel quel
+        // ============================================================
+        emailjs.send('service_71cru5u', 'template_bj379nv', {
+            client_nom:   nom,
+            client_email: mail,
+            gain_nom:     wonPrize,
+            code_unique:  code,
+            date_limite:  dateExp,
+            date_dispo:   dateDispo,
+            heure_gain:   heureGain
+        }).then(() => {
+            document.getElementById("email-area").style.display = "none";
+            document.getElementById("success-area").style.display = "block";
+            checkCooldown();
+        }).catch((err) => {
+            console.error("Erreur mail:", err);
+            document.getElementById("email-area").style.display = "none";
+            document.getElementById("success-area").style.display = "block";
+        });
+    }
 
     window.onload = () => { 
         drawWheel(); 
