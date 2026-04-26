@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rylia — Dashboard Roue</title>
+  <link rel="icon" type="image/png" href="logo-rylia.png">
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    input, select, textarea { font-size: 16px !important; }
+    @media (min-width: 769px) { input, select, textarea { font-size: inherit !important; } }
+
+    :root {
+      --primary:      #FF8C00;
+      --primary-soft: #FFF4E5;
+      --dark:         #111827;
+      --gray:         #6B7280;
+      --gray-light:   #F9FAFB;
+      --border:       #E5E7EB;
+      --white:        #FFFFFF;
+      --success:      #10B981;
+      --success-soft: #ECFDF5;
+      --danger:       #EF4444;
+      --danger-soft:  #FEF2F2;
+      --radius:       12px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--gray-light);
+      color: var(--dark);
+      min-height: 100vh;
+    }
+
+    /* ---- Topbar ---- */
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; }
+    .topbar-name { font-size: 16px; font-weight: 700; color: var(--dark); }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .user-badge {
+      font-size: 13px; color: var(--gray);
+      background: var(--gray-light);
+      padding: 5px 10px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+    .btn-logout {
+      font-size: 13px; font-weight: 600; color: var(--gray);
+      background: none; border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 6px 14px;
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+    }
+    .btn-logout:hover { color: var(--dark); border-color: #9CA3AF; }
+
+    /* ---- Layout ---- */
+    .page { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-size: 22px; font-weight: 700; color: var(--dark); }
+    .page-subtitle { font-size: 14px; color: var(--gray); margin-top: 4px; }
+
+    /* ---- KPI ---- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 22px;
+    }
+    .kpi-card.accent { border-left: 3px solid var(--primary); }
+    .kpi-label { font-size: 12px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 8px; }
+    .kpi-value { font-size: 32px; font-weight: 700; color: var(--dark); line-height: 1; }
+
+    /* ---- Tabs ---- */
+    .tabs-nav-wrap { position: relative; margin-bottom: 28px; }
+    .tabs-arrow { display: none; }
+    .tabs-nav { display: flex; gap: 4px; border-bottom: 2px solid var(--border); }
+    @media (max-width: 768px) {
+      .tabs-nav-wrap { margin-bottom: 20px; }
+      .tabs-arrow {
+        display: flex; position: absolute; top: 0; bottom: 2px; width: 32px;
+        align-items: center; justify-content: center; background: var(--white);
+        border: none; font-size: 22px; font-weight: 700; color: var(--gray);
+        cursor: pointer; z-index: 5; -webkit-tap-highlight-color: transparent;
+        transition: color 0.15s, opacity 0.2s;
+      }
+      .tabs-arrow:active { color: var(--primary); }
+      .tabs-arrow.hidden { opacity: 0; pointer-events: none; }
+      .tabs-arrow-left  { left: 0;  box-shadow:  6px 0 10px -4px rgba(255,255,255,0.9); }
+      .tabs-arrow-right { right: 0; box-shadow: -6px 0 10px -4px rgba(255,255,255,0.9); }
+      .tabs-nav {
+        overflow-x: auto; -webkit-overflow-scrolling: touch;
+        gap: 0; flex-wrap: nowrap; scrollbar-width: none; -ms-overflow-style: none; padding: 0 30px;
+      }
+      .tabs-nav::-webkit-scrollbar { display: none; }
+      .tab-btn { padding: 10px 14px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+    }
+    .tab-btn {
+      padding: 12px 24px; font-size: 14px; font-weight: 600;
+      background: none; border: none; color: var(--gray);
+      cursor: pointer; transition: all 0.2s; font-family: inherit;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+    }
+    .tab-btn:hover { color: var(--dark); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ---- Toolbar ---- */
+    .toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9CA3AF; pointer-events: none; }
+    .search-input {
+      width: 100%; padding: 9px 14px 9px 36px;
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; outline: none; font-family: inherit; color: var(--dark);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,140,0,0.1); }
+    .search-input::placeholder { color: #C4C9D4; }
+    .filter-select {
+      padding: 9px 14px; border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; color: var(--dark); background: var(--white);
+      outline: none; cursor: pointer; font-family: inherit; transition: border-color 0.2s;
+    }
+    .filter-select:focus { border-color: var(--primary); }
+    .btn-validate-code {
+      font-size: 13px; font-weight: 600; color: var(--white);
+      background: var(--primary); border: none; border-radius: 8px;
+      padding: 9px 16px; cursor: pointer; transition: all 0.2s;
+      font-family: inherit; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-validate-code:hover { background: #E67E00; }
+    .btn-delete-all {
+      font-size: 13px; font-weight: 600; color: var(--danger);
+      background: var(--danger-soft); border: 1.5px solid var(--danger);
+      border-radius: 8px; padding: 9px 16px; cursor: pointer;
+      transition: all 0.2s; font-family: inherit;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-delete-all:hover { background: var(--danger); color: white; }
+    .checkbox-remis:disabled { opacity: 0.4; cursor: not-allowed; }
+    .expired-label { font-size: 11px; color: var(--danger); font-weight: 600; }
+
+    /* ---- Table ---- */
+    .table-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--gray-light); border-bottom: 1px solid var(--border); }
+    th { padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray); text-align: left; white-space: nowrap; }
+    td { padding: 13px 16px; font-size: 14px; color: var(--dark); border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #FAFAFA; }
+    tr.row-remis td { opacity: 0.55; }
+    tr.row-remis td.cell-remis { opacity: 1; }
+    .cell-person strong { display: block; font-weight: 600; font-size: 14px; }
+    .cell-person span   { display: block; font-size: 12px; color: var(--gray); margin-top: 2px; }
+    .badge-gain { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--primary-soft); color: var(--primary); white-space: nowrap; }
+    .code { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; background: var(--gray-light); padding: 3px 8px; border-radius: 6px; }
+    .cell-date { font-size: 13px; color: var(--gray); white-space: nowrap; }
+    .badge-exp { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .badge-exp.valid   { background: var(--success-soft); color: var(--success); }
+    .badge-exp.expired { background: var(--danger-soft);  color: var(--danger); }
+    .remis-wrap { display: flex; align-items: center; gap: 8px; }
+    .checkbox-remis { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; flex-shrink: 0; }
+    .remis-time { font-size: 12px; color: var(--success); font-weight: 600; white-space: nowrap; }
+    .saving-dot { display: inline-block; width: 8px; height: 8px; border: 2px solid #9CA3AF; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .table-state { padding: 60px 20px; text-align: center; color: var(--gray); }
+    .table-state p { font-size: 14px; }
+    .loading-spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    .result-count { font-size: 13px; color: var(--gray); padding: 10px 16px; border-top: 1px solid var(--border); text-align: right; }
+
+    /* ---- Menu ⋯ ---- */
+    .menu-cell { width: 44px; text-align: center; white-space: nowrap; }
+    .menu-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; color: var(--gray); font-size: 18px; line-height: 1; transition: background 0.15s, color 0.15s; font-family: inherit; }
+    .menu-btn:hover { background: var(--gray-light); color: var(--dark); }
+    .action-btns { display: inline-flex; gap: 4px; align-items: center; }
+    .action-btn { background: none; border: 1.5px solid var(--border); border-radius: 7px; padding: 5px 7px; cursor: pointer; color: var(--gray); display: inline-flex; align-items: center; line-height: 0; transition: all 0.15s; font-family: inherit; position: relative; }
+    .action-btn:hover { background: var(--gray-light); color: var(--dark); border-color: #9CA3AF; }
+    .action-btn.danger:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+    .action-btn::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; font-size: 11px; font-weight: 500; white-space: nowrap; padding: 4px 8px; border-radius: 5px; pointer-events: none; opacity: 0; transition: opacity 0.15s; font-family: 'Segoe UI', sans-serif; line-height: 1.4; }
+    .action-btn::before { content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: var(--dark); pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+    .action-btn:hover::after, .action-btn:hover::before { opacity: 1; }
+
+    /* ---- Modal suppression ---- */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(2px); z-index: 500; align-items: center; justify-content: center; }
+    .modal-backdrop.show { display: flex; }
+    .modal-box { background: var(--white); border-radius: 16px; padding: 28px 28px 24px; width: 90%; max-width: 360px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); text-align: center; }
+    .modal-icon { width: 48px; height: 48px; background: var(--danger-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .modal-icon svg { color: var(--danger); }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+    .modal-sub { font-size: 13px; color: var(--gray); margin-bottom: 24px; line-height: 1.5; }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-cancel { flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; background: none; font-size: 14px; font-weight: 600; color: var(--gray); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn-cancel:hover { border-color: #9CA3AF; color: var(--dark); }
+    .btn-delete-confirm { flex: 1; padding: 10px; border: none; border-radius: 8px; background: var(--danger); font-size: 14px; font-weight: 700; color: white; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+    .btn-delete-confirm:hover { background: #DC2626; }
+
+    /* ---- Modal Code ---- */
+    .code-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .code-modal.show { display: flex; }
+    .code-modal-content { background: var(--white); border-radius: var(--radius); padding: 32px; max-width: 400px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+    .code-modal-header { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 16px; }
+    .code-input-wrap { margin-bottom: 20px; }
+    .code-input-label { font-size: 12px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block; }
+    .code-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; font-family: 'Monaco', 'Courier New', monospace; letter-spacing: 2px; text-transform: uppercase; transition: border-color 0.2s, box-shadow 0.2s; }
+    .code-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,140,0,0.1); }
+    .code-message { font-size: 13px; margin-bottom: 16px; padding: 12px; border-radius: 8px; display: none; }
+    .code-message.show { display: block; }
+    .code-message.success { background: var(--success-soft); color: #047857; border-left: 3px solid var(--success); }
+    .code-message.error   { background: var(--danger-soft);  color: #991b1b; border-left: 3px solid var(--danger); }
+    .code-message.warning { background: #FEF3C7; color: #92400e; border-left: 3px solid #F59E0B; }
+    .code-modal-btns { display: flex; gap: 12px; }
+    .code-modal-btn { flex: 1; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .code-modal-btn.primary { background: var(--primary); color: var(--white); }
+    .code-modal-btn.primary:hover { background: #E67E00; }
+    .code-modal-btn.primary:disabled { background: #D1D5DB; cursor: not-allowed; }
+    .code-modal-btn.secondary { background: var(--gray-light); color: var(--dark); border: 1.5px solid var(--border); }
+    .code-modal-btn.secondary:hover { background: #F3F4F6; }
+
+    /* ---- Config Roue ---- */
+    .config-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+    .config-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--dark); }
+    .prize-row { display: grid; grid-template-columns: 1fr 120px 120px 44px; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .prize-header { display: grid; grid-template-columns: 1fr 120px 120px 44px; gap: 10px; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray); font-weight: 600; padding: 0 2px; }
+    @media (max-width: 600px) { .prize-row, .prize-header { grid-template-columns: 1fr 80px 80px 36px; gap: 6px; } }
+    .prize-row input { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    .prize-row input:focus { border-color: var(--primary); }
+    .btn-remove-prize { width: 36px; height: 36px; border: 1.5px solid var(--danger); background: var(--danger-soft); color: var(--danger); border-radius: 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .btn-remove-prize:hover { background: var(--danger); color: white; }
+    .btn-add-prize, .btn-save-prize { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.2s; }
+    .btn-add-prize { background: var(--gray-light); color: var(--dark); border: 1.5px solid var(--border); }
+    .btn-add-prize:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-save-prize { background: var(--primary); color: white; }
+    .btn-save-prize:hover { background: #e07d00; }
+    .btn-save-prize:disabled { opacity: 0.6; cursor: not-allowed; }
+    .config-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .prob-total { font-size: 13px; color: var(--gray); margin-top: 10px; }
+    .prob-total.warn { color: var(--danger); font-weight: 600; }
+
+    /* ---- Event management ---- */
+    .event-form label { display: block; font-size: 12px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .event-form input[type="text"], .event-form input[type="datetime-local"], .event-form textarea, .event-form select {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: inherit; outline: none; transition: border-color 0.2s; margin-bottom: 14px; color: var(--dark); background: var(--white);
+    }
+    .event-form input:focus, .event-form textarea:focus, .event-form select:focus { border-color: var(--primary); }
+    .event-form textarea { resize: vertical; min-height: 60px; }
+    .form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 500px) { .form-row-2col { grid-template-columns: 1fr; } }
+    .event-display-options { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .toggle-option { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--dark); cursor: pointer; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 8px; transition: all 0.2s; user-select: none; }
+    .toggle-option:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+    .toggle-option input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+    .range-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .range-row input[type="range"] { flex: 1; accent-color: var(--primary); height: 6px; }
+    .range-value { font-size: 18px; font-weight: 800; color: var(--primary); min-width: 42px; text-align: center; }
+    .redistribution-preview { background: var(--gray-light); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; }
+    .redistribution-preview h5 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray); margin-bottom: 8px; }
+    .redist-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 3px 0; }
+    .redist-label { color: var(--dark); font-weight: 500; }
+    .redist-values { display: flex; gap: 6px; align-items: center; }
+    .redist-old { color: var(--gray); text-decoration: line-through; font-size: 12px; }
+    .redist-new { color: var(--primary); font-weight: 700; }
+    .redist-arrow { color: var(--gray); font-size: 10px; }
+    .event-active-card { border-left: 3px solid var(--success); background: var(--success-soft); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .event-active-card h4 { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+    .event-active-card p { font-size: 13px; color: var(--gray); margin: 2px 0; }
+    .event-inactive-msg { text-align: center; padding: 20px; color: var(--gray); font-size: 14px; }
+
+    /* ---- Historique événements ---- */
+    .event-history-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .event-history-table th { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--gray); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .event-history-table td { font-size: 13px; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--dark); vertical-align: middle; }
+    .event-history-table tr:last-child td { border-bottom: none; }
+    .badge-evt { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .badge-evt.active   { background: var(--success-soft); color: var(--success); }
+    .badge-evt.archived { background: var(--gray-light);   color: var(--gray); }
+    .badge-evt.expired  { background: var(--danger-soft);  color: var(--danger); }
+    .badge-maxqty { display: inline-block; font-size: 11px; color: var(--gray); background: var(--gray-light); padding: 2px 7px; border-radius: 6px; margin-left: 4px; border: 1px solid var(--border); }
+    .event-color-row { display: flex; gap: 14px; align-items: flex-end; margin-bottom: 14px; }
+    .event-color-row > div { flex: 1; }
+    .event-color-row input[type="color"] { width: 100%; height: 38px; border: 1.5px solid var(--border); border-radius: 8px; padding: 2px; cursor: pointer; }
+
+    /* ---- Toast ---- */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--dark); color: white; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 9999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 600px) {
+      .topbar { padding: 0 16px; }
+      .page { padding: 20px 14px; }
+      .page-title { font-size: 18px; }
+      .user-badge { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <img src="logo-rylia-transparent.png" width="8%" alt="Rylia">
+    <span class="topbar-name">Rylia</span>
+  </div>
+  <div class="topbar-right">
+    <span class="user-badge" id="user-email">—</span>
+    <button class="btn-logout" onclick="handleLogout()">Déconnexion</button>
+  </div>
+</header>
+
+<!-- Page -->
+<main class="page">
+  <div class="page-header">
+    <h1 class="page-title">Dashboard Roue</h1>
+    <p class="page-subtitle" id="page-subtitle">Gestion des gains de vos participants</p>
+  </div>
+
+  <!-- Onglets -->
+  <div class="tabs-nav-wrap">
+    <button class="tabs-arrow tabs-arrow-left" id="tabs-arrow-left" onclick="scrollTabs(-1)">‹</button>
+    <div class="tabs-nav" id="tabs-nav">
+      <button class="tab-btn active" id="tab-btn-gains" onclick="switchTab('gains')">🎁 Gestion des gains</button>
+      <button class="tab-btn" id="tab-btn-config" onclick="switchTab('config')">🎡 Configuration Roue</button>
+    </div>
+    <button class="tabs-arrow tabs-arrow-right" id="tabs-arrow-right" onclick="scrollTabs(1)">›</button>
+  </div>
+
+  <!-- ============ TAB: Gestion des gains ============ -->
+  <div class="tab-content active" id="tab-gains">
+
+    <div class="kpi-grid">
+      <div class="kpi-card accent">
+        <div class="kpi-label">Total participants</div>
+        <div class="kpi-value" id="kpi-total">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Gains remis</div>
+        <div class="kpi-value" id="kpi-remis">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Gains expirés</div>
+        <div class="kpi-value" id="kpi-expires">—</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-validate-code" onclick="openCodeModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+          <path d="M12 7v5l3.5 2.1"/>
+        </svg>
+        Valider un code
+      </button>
+      <div class="search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Rechercher un prénom ou e-mail…" oninput="applyFilters()">
+      </div>
+      <select class="filter-select" id="filter-gain" onchange="applyFilters()">
+        <option value="">Tous les gains</option>
+      </select>
+      <select class="filter-select" id="filter-statut" onchange="applyFilters()">
+        <option value="">Tous les statuts</option>
+        <option value="remis">Remis</option>
+        <option value="non-remis">Non remis</option>
+        <option value="expire">Expirés</option>
+      </select>
+      <button class="btn-delete-all" onclick="openDeleteAllModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>
+        Supprimer l'historique
+      </button>
+    </div>
+
+    <div class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Participant</th>
+              <th>Gain remporté</th>
+              <th>Code</th>
+              <th>Expiration</th>
+              <th>Date de jeu</th>
+              <th>Remis</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="7"><div class="table-state"><div class="loading-spinner"></div><p>Chargement des données…</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="result-count" id="result-count" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: Configuration Roue ============ -->
+  <div class="tab-content" id="tab-config">
+    <div class="config-card">
+      <h3>🎯 Configuration des lots</h3>
+      <p style="font-size:13px; color:var(--gray); margin-bottom:16px;">
+        Modifiez les noms, le nombre de lots et les probabilités. La somme des probabilités doit faire 100%. Le nombre de lots doit être pair pour alterner correctement les couleurs.
+      </p>
+      <div class="prize-header">
+        <span>Nom du lot</span>
+        <span>Probabilité (%)</span>
+        <span>Nb max (optionnel)</span>
+        <span></span>
+      </div>
+      <div id="prizes-container"></div>
+      <div class="prob-total" id="prob-total">Total : —%</div>
+      <div class="config-actions">
+        <button class="btn-add-prize" onclick="addPrizeRow()">+ Ajouter un lot</button>
+        <button class="btn-save-prize" id="btn-save-config" onclick="saveWheelConfig()">💾 Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+
+</main>
+
+<!-- Modal suppression -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+    </div>
+    <div class="modal-title">Supprimer ce participant ?</div>
+    <div class="modal-sub" id="delete-modal-sub">Cette action est irréversible.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn-delete-confirm" onclick="confirmDelete()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal suppression tout l'historique -->
+<div class="modal-backdrop" id="delete-all-modal">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+    </div>
+    <div class="modal-title">Supprimer tout l'historique ?</div>
+    <div class="modal-sub" id="delete-all-modal-sub">Tous les participants et leurs gains seront supprimés définitivement. Cette action est irréversible.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDeleteAllModal()">Annuler</button>
+      <button class="btn-delete-confirm" id="btn-delete-all-confirm" onclick="confirmDeleteAll()">Tout supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal validation code -->
+<div class="code-modal" id="code-modal">
+  <div class="code-modal-content">
+    <div class="code-modal-header">Valider un code gagnant</div>
+    <div class="code-input-wrap">
+      <label class="code-input-label">Entrez le code</label>
+      <input type="text" class="code-input" id="code-input" placeholder="XXXX" onkeydown="if(event.key === 'Enter') validateCode()">
+    </div>
+    <div class="code-message" id="code-message"></div>
+    <div class="code-modal-btns">
+      <button class="code-modal-btn primary" id="btn-validate" onclick="validateCode()">Valider</button>
+      <button class="code-modal-btn secondary" onclick="closeCodeModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ================= FIREBASE =================
+  const firebaseConfig = {
+    apiKey: "AIzaSyDjLfEdyvYlKKJA7p-2cSkP2kNv0pjjZz0",
+    authDomain: "dashboard-roue.firebaseapp.com",
+    projectId: "dashboard-roue",
+    storageBucket: "dashboard-roue.firebasestorage.app",
+    messagingSenderId: "109735141824",
+    appId: "1:109735141824:web:2e80a4400db5af5674e825"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  let CLIENT_ID       = null;
+  let allParticipants = [];
+
+  // ================= AUTH GUARD =================
+  auth.onAuthStateChanged(user => {
+    if (!user) { window.location.href = "login.html"; return; }
+    CLIENT_ID = user.uid;
+    document.getElementById('user-email').textContent = user.email;
+    loadParticipants(user.uid);
+    loadWheelConfig();
+  });
+
+  async function handleLogout() {
+    await auth.signOut();
+    window.location.href = "login.html";
+  }
+
+  // ================= TABS =================
+  function scrollTabs(direction) {
+    document.getElementById('tabs-nav').scrollBy({ left: direction * 120, behavior: 'smooth' });
+  }
+
+  function updateTabsArrows() {
+    const nav = document.getElementById('tabs-nav');
+    const l = document.getElementById('tabs-arrow-left');
+    const r = document.getElementById('tabs-arrow-right');
+    if (!nav || !l || !r) return;
+    l.classList.toggle('hidden', nav.scrollLeft <= 2);
+    r.classList.toggle('hidden', nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 2);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const nav = document.getElementById('tabs-nav');
+    if (nav) {
+      nav.addEventListener('scroll', updateTabsArrows);
+      window.addEventListener('resize', updateTabsArrows);
+      setTimeout(updateTabsArrows, 100);
+    }
+  });
+
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    if (tabName === 'gains') {
+      document.getElementById('tab-btn-gains').classList.add('active');
+      document.getElementById('tab-gains').classList.add('active');
+      document.getElementById('page-subtitle').textContent = 'Gestion des gains de vos participants';
+    } else if (tabName === 'config') {
+      document.getElementById('tab-btn-config').classList.add('active');
+      document.getElementById('tab-config').classList.add('active');
+      document.getElementById('page-subtitle').textContent = 'Configuration de la roue de la fortune';
+    }
+  }
+
+  // ================= GESTION DES GAINS =================
+
+  function loadParticipants(uid) {
+    db.collection("clients").doc(uid).collection("participants")
+      .orderBy("date", "desc")
+      .onSnapshot(snapshot => {
+        allParticipants = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        buildGainFilter();
+        applyFilters();
+        updateKPIs();
+      }, err => {
+        console.error("Firestore :", err);
+        showEmpty("Erreur de chargement des données.");
+      });
+  }
+
+  function buildGainFilter() {
+    const select  = document.getElementById("filter-gain");
+    const current = select.value;
+    const gains   = [...new Set(allParticipants.map(p => p.gain).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">Tous les gains</option>';
+    gains.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g; opt.textContent = g;
+      if (g === current) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  function applyFilters() {
+    const search = document.getElementById("search-input").value.toLowerCase().trim();
+    const gain   = document.getElementById("filter-gain").value;
+    const statut = document.getElementById("filter-statut").value;
+
+    const filtered = allParticipants.filter(p => {
+      const matchSearch = !search
+        || (p.nom   || "").toLowerCase().includes(search)
+        || (p.email || "").toLowerCase().includes(search);
+      const matchGain   = !gain || p.gain === gain;
+      const expire      = isExpired(p.date_expiration);
+      const matchStatut = !statut
+        || (statut === "remis"     &&  p.remis)
+        || (statut === "non-remis" && !p.remis)
+        || (statut === "expire"    &&  expire && !p.remis);
+      return matchSearch && matchGain && matchStatut;
+    });
+    renderTable(filtered);
+  }
+
+  function renderTable(rows) {
+    const tbody   = document.getElementById("table-body");
+    const countEl = document.getElementById("result-count");
+
+    if (rows.length === 0) {
+      showEmpty("Aucun résultat pour ces filtres.");
+      countEl.style.display = "none";
+      return;
+    }
+
+    tbody.innerHTML = rows.map(p => {
+      const expired  = isExpired(p.date_expiration);
+      const rowClass = p.remis ? "row-remis" : "";
+      const expBadge = p.date_expiration
+        ? '<span class="badge-exp ' + (expired ? 'expired' : 'valid') + '">' + (expired ? '⚠ ' : '') + escHtml(p.date_expiration) + '</span>'
+        : '<span style="color:var(--gray)">—</span>';
+
+      const remisCell = p.remis
+        ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" checked onchange="toggleRemis(\'' + p.id + '\', this)"><span class="remis-time">' + escHtml(p.remis_heure || "") + '</span></div>'
+        : expired
+          ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" disabled><span class="expired-label">Expiré</span></div>'
+          : '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" onchange="toggleRemis(\'' + p.id + '\', this)"></div>';
+
+      return '<tr class="' + rowClass + '">'
+        + '<td class="cell-person"><strong>' + escHtml(p.nom || "—") + '</strong><span>' + escHtml(p.email || "—") + '</span></td>'
+        + '<td><span class="badge-gain">' + escHtml(p.gain || "—") + '</span></td>'
+        + '<td><span class="code">' + escHtml(p.code || "—") + '</span></td>'
+        + '<td>' + expBadge + '</td>'
+        + '<td class="cell-date">' + formatDate(p.date) + '</td>'
+        + '<td class="cell-remis">' + remisCell + '</td>'
+        + '<td class="menu-cell"><button class="menu-btn" onclick="toggleMenu(event, \'' + p.id + '\', \'' + escHtml(p.nom || "") + '\', \'' + escHtml(p.email || "") + '\')">⋯</button></td>'
+        + '</tr>';
+    }).join("");
+
+    countEl.style.display = "block";
+    countEl.textContent   = rows.length + " résultat" + (rows.length > 1 ? "s" : "");
+  }
+
+  function showEmpty(msg) {
+    document.getElementById("table-body").innerHTML =
+      '<tr><td colspan="7"><div class="table-state"><p>' + msg + '</p></div></td></tr>';
+  }
+
+  function updateKPIs() {
+    document.getElementById("kpi-total").textContent   = allParticipants.length;
+    document.getElementById("kpi-remis").textContent   = allParticipants.filter(p => p.remis).length;
+    document.getElementById("kpi-expires").textContent = allParticipants.filter(p => isExpired(p.date_expiration) && !p.remis).length;
+  }
+
+  async function toggleRemis(docId, checkbox) {
+    checkbox.disabled = true;
+    const wrap    = checkbox.closest(".remis-wrap");
+    const isRemis = checkbox.checked;
+    const now     = new Date();
+    const heure   = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const dateStr = now.toLocaleDateString("fr-FR");
+
+    const dot = document.createElement("span");
+    dot.className = "saving-dot";
+    wrap.appendChild(dot);
+
+    try {
+      await db.collection("clients").doc(CLIENT_ID)
+        .collection("participants").doc(docId)
+        .update(isRemis
+          ? { remis: true, remis_heure: dateStr + " à " + heure, remis_timestamp: firebase.firestore.FieldValue.serverTimestamp() }
+          : { remis: false, remis_heure: firebase.firestore.FieldValue.delete(), remis_timestamp: firebase.firestore.FieldValue.delete() }
+        );
+    } catch (err) {
+      console.error("Erreur mise à jour :", err);
+      checkbox.checked  = !isRemis;
+      checkbox.disabled = false;
+      dot.remove();
+      alert("Erreur lors de la mise à jour. Réessayez.");
+    }
+  }
+
+  // ---- Menu ⋯ ----
+  let pendingDeleteId = null;
+
+  function toggleMenu(event, docId, nom, email) {
+    event.stopPropagation();
+    const cell = event.currentTarget.closest("td");
+    if (cell.querySelector(".action-btns")) {
+      cell.innerHTML = '<button class="menu-btn" onclick="toggleMenu(event, \'' + docId + '\', \'' + nom + '\', \'' + email + '\')">⋯</button>';
+      return;
+    }
+    cell.innerHTML = '<div class="action-btns">'
+      + '<button class="action-btn" data-tip="Copier l\'e-mail" onclick="copyEmail(\'' + email + '\')">'
+      +   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
+      + '</button>'
+      + '<button class="action-btn danger" data-tip="Supprimer" onclick="openDeleteModal(\'' + docId + '\', \'' + nom + '\', \'' + email + '\')">'
+      +   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+      + '</button>'
+      + '<button class="action-btn" data-tip="Fermer" onclick="toggleMenu(event, \'' + docId + '\', \'' + nom + '\', \'' + email + '\')">'
+      +   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+      + '</button>'
+      + '</div>';
+  }
+
+  function copyEmail(email) {
+    navigator.clipboard.writeText(email).then(function() { showToast("E-mail copié !"); });
+  }
+
+  function openDeleteModal(docId, nom, email) {
+    pendingDeleteId = docId;
+    document.getElementById("delete-modal-sub").textContent = (nom || "Ce participant") + " (" + email + ") sera supprimé définitivement.";
+    document.getElementById("delete-modal").classList.add("show");
+  }
+
+  function closeDeleteModal() {
+    document.getElementById("delete-modal").classList.remove("show");
+    pendingDeleteId = null;
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    var docId = pendingDeleteId;
+    closeDeleteModal();
+    try {
+      await db.collection("clients").doc(CLIENT_ID).collection("participants").doc(docId).delete();
+      showToast("Participant supprimé.");
+    } catch (err) {
+      console.error("Erreur suppression :", err);
+      showToast("Erreur lors de la suppression.");
+    }
+  }
+
+  // ---- Suppression tout l'historique ----
+  function openDeleteAllModal() {
+    if (allParticipants.length === 0) { showToast("Aucun participant à supprimer."); return; }
+    document.getElementById("delete-all-modal-sub").textContent =
+      allParticipants.length + " participant" + (allParticipants.length > 1 ? "s" : "") + " et leurs gains seront supprimés définitivement. Cette action est irréversible.";
+    document.getElementById("delete-all-modal").classList.add("show");
+  }
+
+  function closeDeleteAllModal() {
+    document.getElementById("delete-all-modal").classList.remove("show");
+  }
+
+  async function confirmDeleteAll() {
+    var btn = document.getElementById("btn-delete-all-confirm");
+    btn.disabled = true;
+    btn.textContent = "Suppression…";
+
+    try {
+      var batch = db.batch();
+      var count = 0;
+      var snap = await db.collection("clients").doc(CLIENT_ID).collection("participants").get();
+
+      for (var i = 0; i < snap.docs.length; i++) {
+        batch.delete(snap.docs[i].ref);
+        count++;
+        // Firestore limite les batchs à 500 opérations
+        if (count % 500 === 0) {
+          await batch.commit();
+          batch = db.batch();
+        }
+      }
+      if (count % 500 !== 0) await batch.commit();
+
+      closeDeleteAllModal();
+      showToast("✅ Historique supprimé (" + count + " participant" + (count > 1 ? "s" : "") + ").");
+    } catch (err) {
+      console.error("Erreur suppression historique :", err);
+      showToast("❌ Erreur lors de la suppression.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Tout supprimer";
+    }
+  }
+
+  // ---- Validation code ----
+  function openCodeModal() {
+    document.getElementById("code-modal").classList.add("show");
+    document.getElementById("code-input").value = "";
+    document.getElementById("code-message").classList.remove("show");
+    setTimeout(function() { document.getElementById("code-input").focus(); }, 100);
+  }
+
+  function closeCodeModal() {
+    document.getElementById("code-modal").classList.remove("show");
+    document.getElementById("code-input").value = "";
+    document.getElementById("code-message").classList.remove("show");
+  }
+
+  function showCodeMessage(message, type) {
+    var msgEl = document.getElementById("code-message");
+    msgEl.textContent = message;
+    msgEl.className = "code-message show " + type;
+  }
+
+  async function validateCode() {
+    var codeInput   = document.getElementById("code-input").value.trim().toUpperCase();
+    var btnValidate = document.getElementById("btn-validate");
+    if (!codeInput) { showCodeMessage("Veuillez entrer un code", "error"); return; }
+    btnValidate.disabled = true;
+
+    try {
+      var snapshot = await db.collection("clients").doc(CLIENT_ID)
+        .collection("participants").where("code", "==", codeInput).get();
+
+      if (snapshot.empty) {
+        showCodeMessage("❌ Code introuvable. Vérifiez le code saisi.", "error");
+        btnValidate.disabled = false;
+        return;
+      }
+
+      var doc         = snapshot.docs[0];
+      var participant = doc.data();
+      var docId       = doc.id;
+
+      if (participant.remis) {
+        showCodeMessage("⚠️ Ce code a déjà été remis le " + (participant.remis_heure || "—") + ".", "error");
+        btnValidate.disabled = false;
+        return;
+      }
+
+      if (isExpired(participant.date_expiration)) {
+        showCodeMessage("⏰ Ce code a expiré le " + (participant.date_expiration || "—") + ".", "warning");
+        btnValidate.disabled = false;
+        return;
+      }
+
+      var now     = new Date();
+      var heure   = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      var dateStr = now.toLocaleDateString("fr-FR");
+
+      await db.collection("clients").doc(CLIENT_ID)
+        .collection("participants").doc(docId)
+        .update({ remis: true, remis_heure: dateStr + " à " + heure, remis_timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+
+      showCodeMessage("✅ Code validé ! Gain de " + (participant.gain || "—") + " remis à " + (participant.nom || "—") + ".", "success");
+      setTimeout(function() { closeCodeModal(); }, 2000);
+
+    } catch (err) {
+      console.error("Erreur validation code :", err);
+      showCodeMessage("Erreur lors de la validation. Réessayez.", "error");
+    } finally {
+      btnValidate.disabled = false;
+    }
+  }
+
+  document.addEventListener("click", function(e) {
+    if (e.target === document.getElementById("code-modal")) closeCodeModal();
+  });
+
+  // ---- Helpers ----
+  function isExpired(dateStr) {
+    if (!dateStr) return false;
+    var parts = dateStr.split("/");
+    return new Date(parts[2] + "-" + parts[1] + "-" + parts[0]) < new Date(new Date().toDateString());
+  }
+
+  function formatDate(ts) {
+    if (!ts) return "—";
+    var d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  // ================= CONFIGURATION ROUE =================
+  var wheelPrizes = [];
+
+  async function loadWheelConfig() {
+    if (!CLIENT_ID) return;
+    try {
+      var doc = await db.collection("clients").doc(CLIENT_ID).collection("config").doc("wheel").get();
+      if (doc.exists && doc.data().prizes && doc.data().prizes.length > 0) {
+        wheelPrizes = doc.data().prizes;
+      } else {
+        wheelPrizes = [
+          { label: "Menu taille M",    chance: 2.0 },
+          { label: "-10% commande",    chance: 2.5 },
+          { label: "Dessert au choix", chance: 2.5 },
+          { label: "-5% commande",     chance: 6.0 },
+          { label: "x4 Snack",         chance: 7.0 },
+          { label: "Une boisson",      chance: 80.0 }
+        ];
+      }
+    } catch (err) {
+      console.warn("Config roue non trouvée, valeurs par défaut.", err);
+      wheelPrizes = [
+        { label: "Menu taille M",    chance: 2.0 },
+        { label: "-10% commande",    chance: 2.5 },
+        { label: "Dessert au choix", chance: 2.5 },
+        { label: "-5% commande",     chance: 6.0 },
+        { label: "x4 Snack",         chance: 7.0 },
+        { label: "Une boisson",      chance: 80.0 }
+      ];
+    }
+    renderWheelPrizeRows();
+    updateWheelProbTotal();
+  }
+
+  function renderWheelPrizeRows() {
+    var container = document.getElementById('prizes-container');
+    if (!container) return;
+    container.innerHTML = '';
+    wheelPrizes.forEach(function(p, i) {
+      var row = document.createElement('div');
+      row.className = 'prize-row';
+      row.innerHTML = '<input type="text" value="' + escHtml(p.label) + '" placeholder="Nom du lot" onchange="updateWheelPrize(' + i + ',\'label\',this.value)">'
+        + '<input type="number" value="' + p.chance + '" min="0" max="100" step="0.1" placeholder="%" onchange="updateWheelPrize(' + i + ',\'chance\',this.value)" oninput="updateWheelProbTotal()">'
+        + '<input type="number" value="' + (p.maxQty || '') + '" min="0" step="1" placeholder="∞" onchange="updateWheelPrize(' + i + ',\'maxQty\',this.value)">'
+        + '<button class="btn-remove-prize" onclick="removeWheelPrize(' + i + ')" title="Supprimer">×</button>';
+      container.appendChild(row);
+    });
+  }
+
+  function updateWheelPrize(index, field, value) {
+    if (field === 'chance') { wheelPrizes[index].chance = parseFloat(value) || 0; }
+    else if (field === 'maxQty') { wheelPrizes[index].maxQty = value ? parseInt(value) : null; }
+    else { wheelPrizes[index][field] = value; }
+    updateWheelProbTotal();
+  }
+
+  function removeWheelPrize(index) {
+    if (wheelPrizes.length <= 2) { showToast("Il faut au minimum 2 lots."); return; }
+    wheelPrizes.splice(index, 1);
+    renderWheelPrizeRows();
+    updateWheelProbTotal();
+  }
+
+  function addPrizeRow() {
+    if (wheelPrizes.length >= 12) { showToast("Maximum 12 lots."); return; }
+    wheelPrizes.push({ label: "", chance: 0, maxQty: null });
+    renderWheelPrizeRows();
+    updateWheelProbTotal();
+  }
+
+  function updateWheelProbTotal() {
+    var total = wheelPrizes.reduce(function(s, p) { return s + (p.chance || 0); }, 0);
+    var el = document.getElementById('prob-total');
+    if (!el) return;
+    var isOdd = wheelPrizes.length % 2 !== 0;
+    var isBadTotal = Math.abs(total - 100) > 0.1;
+    var text = "Total : " + total.toFixed(1) + "%";
+    if (isOdd) text += "  ⚠ Nombre de lots impair (" + wheelPrizes.length + ") — ajoutez ou retirez un lot";
+    el.textContent = text;
+    el.className = (isBadTotal || isOdd) ? 'prob-total warn' : 'prob-total';
+  }
+
+  async function saveWheelConfig() {
+    if (!CLIENT_ID) return;
+    if (wheelPrizes.length % 2 !== 0) { showToast("Le nombre de lots doit être pair pour alterner les couleurs sur la roue."); return; }
+    var total = wheelPrizes.reduce(function(s, p) { return s + (p.chance || 0); }, 0);
+    if (Math.abs(total - 100) > 0.5) { showToast("La somme des probabilités doit faire 100% (actuellement " + total.toFixed(1) + "%)."); return; }
+    if (wheelPrizes.some(function(p) { return !p.label || p.label.trim() === ''; })) { showToast("Chaque lot doit avoir un nom."); return; }
+
+    var btn = document.getElementById('btn-save-config');
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
+
+    try {
+      var prizesToSave = wheelPrizes.map(function(p) {
+        var obj = { label: p.label.trim(), chance: p.chance };
+        if (p.maxQty) obj.maxQty = p.maxQty;
+        return obj;
+      });
+      await db.collection("clients").doc(CLIENT_ID).collection("config").doc("wheel").set({
+        prizes: prizesToSave,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast("✅ Configuration de la roue enregistrée !");
+    } catch (err) {
+      console.error("Erreur sauvegarde config roue:", err);
+      showToast("❌ Erreur lors de l'enregistrement.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Enregistrer';
+    }
+  }
+
+  // ================= TOAST =================
+  var toastTimer;
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
+  }
+</script>
+</body>
+</html>
