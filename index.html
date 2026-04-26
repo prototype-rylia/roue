@@ -240,9 +240,9 @@
     (function() { emailjs.init("Xfwt-_9NJQOGH4NLH"); })();
 
     // ============================================================
-    // Configuration des lots
+    // Configuration des lots — chargée depuis Firestore
     // ============================================================
-    const prizeConfig = [
+    const defaultPrizeConfig = [
         { label: "Menu taille M",    chance: 2.0,  color: "rgba(255, 140, 0, 0.5)" },
         { label: "-10% commande",    chance: 2.5,  color: "#FFFFFF" },
         { label: "Dessert au choix", chance: 2.5,  color: "rgba(255, 140, 0, 0.5)" },
@@ -251,9 +251,32 @@
         { label: "Une boisson",      chance: 80.0, color: "#FFFFFF" }
     ];
 
+    let prizeConfig = [...defaultPrizeConfig];
+
+    // Charger la config depuis Firestore
+    async function loadPrizeConfig() {
+        try {
+            const doc = await db.collection("clients").doc(CLIENT_ID).collection("config").doc("wheel").get();
+            if (doc.exists && doc.data().prizes && doc.data().prizes.length > 0) {
+                const prizes = doc.data().prizes;
+                prizeConfig = prizes.map((p, i) => ({
+                    label: p.label,
+                    chance: p.chance,
+                    color: i % 2 === 0 ? "rgba(255, 140, 0, 0.5)" : "#FFFFFF"
+                }));
+            }
+        } catch (err) {
+            console.warn("Config Firestore non trouvée, utilisation des valeurs par défaut.", err);
+        }
+
+        // Recalculer arc et redessiner
+        arc = Math.PI / (prizeConfig.length / 2);
+        drawWheel();
+    }
+
     const canvas = document.getElementById("wheelCanvas");
     const ctx = canvas.getContext("2d");
-    const arc = Math.PI / (prizeConfig.length / 2);
+    let arc = Math.PI / (prizeConfig.length / 2);
     let startAngle = 0;
     let wonPrize = "";
     let isUnlocked = false;
@@ -263,14 +286,32 @@
         ctx.clearRect(0, 0, 300, 300);
         prizeConfig.forEach((p, i) => {
             let angle = startAngle + i * arc;
-            ctx.fillStyle = p.color;
-            ctx.beginPath(); ctx.moveTo(150, 150); ctx.arc(150, 150, 145, angle, angle + arc); ctx.fill();
+
             ctx.save();
-            ctx.fillStyle = (p.color === "#FFFFFF") ? "#FF8C00" : "white"; 
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.moveTo(150, 150);
+            ctx.arc(150, 150, 145, angle, angle + arc);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.save();
+            ctx.strokeStyle = "#e0e0e0";
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(150, 150);
+            ctx.arc(150, 150, 145, angle, angle + arc);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.save();
+            ctx.fillStyle = (p.color === "#FFFFFF") ? "#FF8C00" : "white";
             ctx.font = "bold 11px Arial";
             ctx.translate(150 + Math.cos(angle + arc/2)*100, 150 + Math.sin(angle + arc/2)*100);
             ctx.rotate(angle + arc/2 + Math.PI/2);
-            ctx.fillText(p.label, -ctx.measureText(p.label).width/2, 0);
+            const label = p.label || "";
+            ctx.fillText(label, -ctx.measureText(label).width/2, 0);
             ctx.restore();
         });
     }
@@ -492,8 +533,9 @@
         });
     }
 
-    window.onload = () => { 
+    window.onload = async () => { 
         drawWheel(); 
+        await loadPrizeConfig();
         checkCooldown(); 
     };
 </script>
