@@ -3,1401 +3,309 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Rylia — Dashboard Fidélité</title>
+  <title>Rylia — Dashboard Roue</title>
+  <link rel="icon" type="image/png" href="logo-rylia.png">
 
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     input, select, textarea { font-size: 16px !important; }
     @media (min-width: 769px) { input, select, textarea { font-size: inherit !important; } }
 
     :root {
-      --primary:      #E8590C;
-      --primary-soft: #FFF7ED;
-      --primary-hover:#C2410C;
-      --dark:         #0F172A;
-      --gray:         #64748B;
-      --gray-light:   #F8FAFC;
-      --border:       #E2E8F0;
+      --primary:      #FF8C00;
+      --primary-soft: #FFF4E5;
+      --dark:         #111827;
+      --gray:         #6B7280;
+      --gray-light:   #F9FAFB;
+      --border:       #E5E7EB;
       --white:        #FFFFFF;
-      --success:      #059669;
+      --success:      #10B981;
       --success-soft: #ECFDF5;
-      --danger:       #DC2626;
+      --danger:       #EF4444;
       --danger-soft:  #FEF2F2;
-      --radius:       10px;
-      --shadow-sm:    0 1px 2px rgba(0,0,0,0.05);
-      --shadow-md:    0 4px 12px rgba(0,0,0,0.08);
-      --shadow-lg:    0 12px 40px rgba(0,0,0,0.12);
+      --radius:       12px;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
-      background: #F1F5F9;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--gray-light);
       color: var(--dark);
       min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
     }
 
     /* ---- Topbar ---- */
     .topbar {
       background: var(--white);
       border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow-sm);
+      padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
     }
-
     .topbar-brand { display: flex; align-items: center; gap: 10px; }
-
-    .topbar-logo {
-      width: 34px; height: 34px;
-      background: var(--primary);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .topbar-logo svg { width: 18px; height: 18px; fill: white; }
-    .topbar-name { font-size: 16px; font-weight: 700; color: var(--dark); letter-spacing: -0.3px; }
-
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
-
+    .topbar-name { font-size: 16px; font-weight: 700; color: var(--dark); }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
     .user-badge {
-      font-size: 12px; color: var(--gray); font-weight: 500;
+      font-size: 13px; color: var(--gray);
       background: var(--gray-light);
-      padding: 6px 12px; border-radius: 99px;
+      padding: 5px 10px; border-radius: 20px;
       border: 1px solid var(--border);
     }
-
     .btn-logout {
-      font-size: 12px; font-weight: 600; color: var(--gray);
+      font-size: 13px; font-weight: 600; color: var(--gray);
       background: none; border: 1.5px solid var(--border);
-      border-radius: 99px; padding: 6px 14px;
+      border-radius: 8px; padding: 6px 14px;
       cursor: pointer; transition: all 0.2s; font-family: inherit;
     }
-    .btn-logout:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+    .btn-logout:hover { color: var(--dark); border-color: #9CA3AF; }
 
     /* ---- Layout ---- */
-    .page { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
-
-    .page-header { margin-bottom: 24px; }
-    .page-title { font-size: 24px; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; }
-    .page-subtitle { font-size: 13px; color: var(--gray); margin-top: 4px; font-weight: 500; }
+    .page { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+    .page-header { margin-bottom: 28px; }
+    .page-title { font-size: 22px; font-weight: 700; color: var(--dark); }
+    .page-subtitle { font-size: 14px; color: var(--gray); margin-top: 4px; }
 
     /* ---- KPI ---- */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 14px; margin-bottom: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 28px;
     }
-
     .kpi-card {
       background: var(--white); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 20px 22px;
-      box-shadow: var(--shadow-sm);
-      transition: box-shadow 0.2s, transform 0.2s;
     }
+    .kpi-card.accent { border-left: 3px solid var(--primary); }
+    .kpi-label { font-size: 12px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 8px; }
+    .kpi-value { font-size: 32px; font-weight: 700; color: var(--dark); line-height: 1; }
 
-    .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-
-    .kpi-card.accent {
-      background: linear-gradient(135deg, var(--primary-soft) 0%, #FED7AA 100%);
-      border-color: #FDBA74;
-    }
-
-    .kpi-label {
-      font-size: 11px; font-weight: 700; color: var(--gray);
-      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
-    }
-
-    .kpi-value { font-size: 30px; font-weight: 800; color: var(--dark); line-height: 1; letter-spacing: -0.5px; }
-
-    .kpi-card.accent .kpi-value { color: var(--primary); }
-
-    /* ---- Toolbar ---- */
-    .toolbar {
-      display: flex; gap: 12px; margin-bottom: 16px;
-      flex-wrap: wrap; align-items: center;
-    }
-
-    .search-wrap { position: relative; flex: 1; min-width: 200px; }
-
-    .search-wrap svg {
-      position: absolute; left: 14px; top: 50%;
-      transform: translateY(-50%); color: #94A3B8; pointer-events: none;
-    }
-
-    .search-input {
-      width: 100%; padding: 10px 14px 10px 40px;
-      border: 1.5px solid var(--border); border-radius: 99px;
-      font-size: 13px; outline: none; font-family: inherit;
-      color: var(--dark); transition: all 0.2s;
-      background: var(--white); box-shadow: var(--shadow-sm);
-    }
-    .search-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(232,89,12,0.08);
-    }
-    .search-input::placeholder { color: #94A3B8; }
-
-    .filter-select {
-      padding: 10px 16px; border: 1.5px solid var(--border);
-      border-radius: 99px; font-size: 13px;
-      color: var(--dark); background: var(--white);
-      outline: none; cursor: pointer; font-family: inherit;
-      transition: all 0.2s; box-shadow: var(--shadow-sm);
-    }
-    .filter-select:focus { border-color: var(--primary); }
-
-    /* ---- Table ---- */
-    .table-card {
-      background: var(--white); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .table-wrap { overflow-x: auto; }
-
-    table { width: 100%; border-collapse: collapse; }
-
-    thead { background: #F8FAFC; border-bottom: 1px solid var(--border); }
-
-    th {
-      padding: 12px 16px; font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--gray); text-align: left; white-space: nowrap;
-    }
-
-    td {
-      padding: 14px 16px; font-size: 13px; color: var(--dark);
-      border-bottom: 1px solid #F1F5F9; vertical-align: middle;
-    }
-
-    tr:last-child td { border-bottom: none; }
-
-    tbody tr { cursor: pointer; transition: background 0.15s; }
-    tbody tr:hover { background: var(--primary-soft); }
-
-    .cell-person strong { display: block; font-weight: 600; font-size: 13px; }
-    .cell-person span   { display: block; font-size: 11px; color: var(--gray); margin-top: 2px; }
-
-    .badge-points {
-      display: inline-block; padding: 4px 10px; border-radius: 99px;
-      font-size: 11px; font-weight: 700;
-      background: var(--primary-soft); color: var(--primary); white-space: nowrap;
-    }
-
-    .badge-points.zero { background: #F1F5F9; color: var(--gray); }
-
-    .code {
-      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; font-size: 12px; font-weight: 600;
-      letter-spacing: 0.06em; background: #F1F5F9;
-      padding: 3px 8px; border-radius: 6px; color: var(--dark);
-    }
-
-    .cell-date { font-size: 12px; color: var(--gray); white-space: nowrap; }
-
-    .rank-badge {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 26px; height: 26px; border-radius: 8px;
-      font-size: 11px; font-weight: 800; background: #F1F5F9; color: var(--gray);
-    }
-
-    .rank-badge.gold   { background: #FEF3C7; color: #B45309; }
-    .rank-badge.silver { background: #F1F5F9; color: #475569; }
-    .rank-badge.bronze { background: #FED7AA; color: #9A3412; }
-
-    .tier-bar {
-      display: flex; align-items: center; gap: 8px;
-    }
-
-    .tier-track {
-      flex: 1; height: 6px; background: #E2E8F0;
-      border-radius: 99px; overflow: hidden; min-width: 60px;
-    }
-
-    .tier-fill {
-      height: 100%; background: linear-gradient(90deg, #FB923C, var(--primary)); border-radius: 99px;
-      transition: width 0.4s ease;
-    }
-
-    .tier-label { font-size: 10px; color: var(--gray); white-space: nowrap; font-weight: 600; }
-
-    /* ---- Bouton gérer ---- */
-    .btn-manage {
-      background: var(--primary); border: none;
-      border-radius: 99px; padding: 6px 14px; cursor: pointer;
-      color: white; font-size: 11px; font-weight: 700;
-      display: inline-flex; align-items: center; gap: 5px;
-      line-height: 1; transition: all 0.2s; font-family: inherit;
-      box-shadow: 0 2px 6px rgba(232,89,12,0.25);
-    }
-    .btn-manage:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(232,89,12,0.3);
-    }
-
-    /* ---- Compteur ---- */
-    .result-count {
-      font-size: 12px; color: var(--gray); font-weight: 500;
-      padding: 10px 16px; border-top: 1px solid var(--border);
-      text-align: right;
-    }
-
-    /* ---- États vide / loading ---- */
-    .table-state { padding: 60px 20px; text-align: center; color: var(--gray); }
-    .table-state p { font-size: 13px; }
-
-    .loading-spinner {
-      width: 28px; height: 28px;
-      border: 3px solid var(--border); border-top-color: var(--primary);
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-      margin: 0 auto 12px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ---- Modale gestion client ---- */
-    .modal-backdrop {
-      display: none; position: fixed; inset: 0;
-      background: rgba(15,23,42,0.5); backdrop-filter: blur(4px);
-      z-index: 500; align-items: center; justify-content: center;
-      padding: 20px;
-    }
-    .modal-backdrop.show { display: flex; }
-
-    .modal-box {
-      background: var(--white); border-radius: 16px;
-      width: 100%; max-width: 480px;
-      box-shadow: var(--shadow-lg);
-      overflow: hidden; animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes modalIn {
-      from { transform: translateY(16px) scale(0.97); opacity: 0; }
-      to   { transform: translateY(0) scale(1);    opacity: 1; }
-    }
-
-    .modal-header {
-      padding: 22px 24px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-    }
-
-    .modal-client-info {}
-
-    .modal-client-name { font-size: 18px; font-weight: 800; color: var(--dark); letter-spacing: -0.3px; }
-    .modal-client-email { font-size: 12px; color: var(--gray); margin-top: 3px; }
-
-    .modal-points-pill {
-      background: linear-gradient(135deg, var(--primary-soft), #FED7AA);
-      color: var(--primary);
-      border-radius: 99px; padding: 8px 16px;
-      font-size: 20px; font-weight: 800; white-space: nowrap;
-      flex-shrink: 0; border: 1px solid #FDBA74;
-    }
-    .modal-points-pill span { font-size: 12px; font-weight: 700; }
-
-    .modal-close {
-      background: none; border: none; cursor: pointer;
-      color: var(--gray); padding: 6px; border-radius: 8px;
-      display: flex; align-items: center;
-      transition: all 0.15s;
-      flex-shrink: 0;
-    }
-    .modal-close:hover { color: var(--dark); background: #F1F5F9; }
-
-    .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
-
-    .modal-section {
-      background: #F8FAFC; border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px;
-    }
-
-    .modal-section-title {
-      font-size: 11px; font-weight: 700; color: var(--gray);
-      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;
-    }
-
-    .points-input-row { display: flex; gap: 8px; }
-
-    .points-input {
-      flex: 1; padding: 10px 14px; border: 1.5px solid var(--border);
-      border-radius: var(--radius); font-size: 14px; outline: none; font-family: inherit;
-      color: var(--dark); transition: all 0.2s;
-      background: var(--white);
-    }
-    .points-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(232,89,12,0.08);
-    }
-    .points-input::placeholder { color: #94A3B8; }
-
-    .btn-add-points {
-      padding: 10px 20px; background: var(--primary); color: var(--white);
-      border: none; border-radius: var(--radius); font-size: 13px; font-weight: 700;
-      cursor: pointer; font-family: inherit; transition: all 0.2s;
-      white-space: nowrap;
-    }
-    .btn-add-points:hover { background: var(--primary-hover); transform: translateY(-1px); }
-    .btn-add-points:disabled { background: #CBD5E1; cursor: not-allowed; transform: none; }
-
-    .rewards-grid { display: flex; flex-direction: column; gap: 8px; }
-
-    .btn-reward {
-      width: 100%; padding: 10px 14px; background: var(--white);
-      border: 1.5px solid var(--border); border-radius: var(--radius);
-      font-size: 13px; font-weight: 600; cursor: pointer;
-      font-family: inherit; transition: all 0.2s;
-      display: flex; align-items: center; justify-content: space-between;
-      color: var(--dark);
-    }
-    .btn-reward:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
-    .btn-reward:disabled { opacity: 0.4; cursor: not-allowed; background: #F8FAFC; }
-
-    .btn-reward.special-reward {
-      background: linear-gradient(135deg, #FFF7ED 0%, #FED7AA 100%);
-      border: 2px solid var(--primary);
-      position: relative;
-    }
-    .btn-reward.special-reward::before {
-      content: "SPECIAL";
-      position: absolute;
-      top: -8px;
-      right: 10px;
-      background: var(--primary);
-      color: white;
-      font-size: 9px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 99px;
-      letter-spacing: 0.5px;
-    }
-    .btn-reward.special-reward:hover {
-      background: linear-gradient(135deg, #FED7AA 0%, #FDBA74 100%);
-      border-color: var(--primary-hover);
-      transform: translateY(-1px);
-    }
-
-    .reward-pts-badge {
-      font-size: 10px; font-weight: 800; padding: 3px 9px;
-      background: var(--danger-soft); color: var(--danger); border-radius: 99px;
-    }
-
-    .no-rewards {
-      font-size: 12px; color: var(--gray); text-align: center;
-      padding: 12px; font-style: italic;
-    }
-
-    /* ---- Message feedback modal ---- */
-    .modal-feedback {
-      font-size: 12px; padding: 10px 14px; border-radius: var(--radius);
-      display: none; margin-top: 4px; font-weight: 500;
-    }
-    .modal-feedback.show { display: block; }
-    .modal-feedback.success { background: var(--success-soft); color: #047857; border-left: 3px solid var(--success); }
-    .modal-feedback.error   { background: var(--danger-soft);  color: #991b1b; border-left: 3px solid var(--danger); }
-
-    .modal-footer {
-      padding: 14px 24px 20px;
-      display: flex; justify-content: flex-end;
-    }
-
-    .btn-close-modal {
-      padding: 9px 20px; background: #F1F5F9; border: none;
-      border-radius: 99px; font-size: 13px; font-weight: 600; color: var(--gray);
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .btn-close-modal:hover { background: #E2E8F0; color: var(--dark); }
-
-    /* ---- Toast ---- */
-    .toast {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--dark); color: white;
-      padding: 12px 24px; border-radius: 99px;
-      font-size: 13px; font-weight: 600;
-      z-index: 600; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      white-space: nowrap; box-shadow: var(--shadow-lg);
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ---- Onglets ---- */
-    .tabs-nav-wrap {
-      position: relative;
-      margin-bottom: 24px;
-    }
-
-    .tabs-arrow {
-      display: none;
-    }
-
-    .tabs-nav {
-      display: flex; gap: 6px;
-      background: #E2E8F0;
-      border-radius: 99px;
-      padding: 4px;
-      border-bottom: none;
-    }
-
+    /* ---- Tabs ---- */
+    .tabs-nav-wrap { position: relative; margin-bottom: 28px; }
+    .tabs-arrow { display: none; }
+    .tabs-nav { display: flex; gap: 4px; border-bottom: 2px solid var(--border); }
     @media (max-width: 768px) {
       .tabs-nav-wrap { margin-bottom: 20px; }
-
       .tabs-arrow {
-        display: flex;
-        position: absolute; top: 0; bottom: 0;
-        width: 32px;
-        align-items: center; justify-content: center;
-        background: linear-gradient(90deg, #E2E8F0, transparent);
-        border: none;
-        font-size: 18px; font-weight: 700;
-        color: var(--gray);
-        cursor: pointer;
-        z-index: 5;
-        -webkit-tap-highlight-color: transparent;
+        display: flex; position: absolute; top: 0; bottom: 2px; width: 32px;
+        align-items: center; justify-content: center; background: var(--white);
+        border: none; font-size: 22px; font-weight: 700; color: var(--gray);
+        cursor: pointer; z-index: 5; -webkit-tap-highlight-color: transparent;
         transition: color 0.15s, opacity 0.2s;
       }
-      .tabs-arrow-right { background: linear-gradient(270deg, #E2E8F0, transparent); }
       .tabs-arrow:active { color: var(--primary); }
       .tabs-arrow.hidden { opacity: 0; pointer-events: none; }
-
-      .tabs-arrow-left { left: 0; }
-      .tabs-arrow-right { right: 0; }
-
+      .tabs-arrow-left  { left: 0;  box-shadow:  6px 0 10px -4px rgba(255,255,255,0.9); }
+      .tabs-arrow-right { right: 0; box-shadow: -6px 0 10px -4px rgba(255,255,255,0.9); }
       .tabs-nav {
         overflow-x: auto; -webkit-overflow-scrolling: touch;
-        flex-wrap: nowrap;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        padding: 4px;
+        gap: 0; flex-wrap: nowrap; scrollbar-width: none; -ms-overflow-style: none; padding: 0 30px;
       }
       .tabs-nav::-webkit-scrollbar { display: none; }
-      .tab-btn { padding: 8px 14px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+      .tab-btn { padding: 10px 14px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
     }
-
     .tab-btn {
-      padding: 9px 20px; font-size: 13px; font-weight: 600;
+      padding: 12px 24px; font-size: 14px; font-weight: 600;
       background: none; border: none; color: var(--gray);
       cursor: pointer; transition: all 0.2s; font-family: inherit;
-      border-radius: 99px; margin-bottom: 0;
-      border-bottom: none;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
     }
-
-    .tab-btn:hover { color: var(--dark); background: rgba(255,255,255,0.5); }
-
-    .tab-btn.active {
-      color: var(--dark); background: var(--white);
-      box-shadow: var(--shadow-sm);
-      border-bottom-color: transparent;
-    }
-
+    .tab-btn:hover { color: var(--dark); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* ---- Événements ---- */
-    .event-form-card {
-      background: var(--white);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 28px; margin-bottom: 24px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .event-form-title {
-      font-size: 17px; font-weight: 800; color: var(--dark);
-      margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
-      padding-bottom: 16px; border-bottom: 1px solid var(--border);
-      letter-spacing: -0.3px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-label {
-      display: block; font-size: 12px; font-weight: 700;
-      color: var(--dark); margin-bottom: 6px;
-      letter-spacing: -0.1px;
-    }
-
-    .form-input, .form-file {
-      width: 100%; padding: 11px 14px;
+    /* ---- Toolbar ---- */
+    .toolbar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9CA3AF; pointer-events: none; }
+    .search-input {
+      width: 100%; padding: 9px 14px 9px 36px;
       border: 1.5px solid var(--border); border-radius: var(--radius);
-      font-size: 13px; outline: none; font-family: inherit;
-      background: var(--white); transition: all 0.2s;
+      font-size: 14px; outline: none; font-family: inherit; color: var(--dark);
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-
-    .form-input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(232,89,12,0.08);
+    .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,140,0,0.1); }
+    .search-input::placeholder { color: #C4C9D4; }
+    .filter-select {
+      padding: 9px 14px; border: 1.5px solid var(--border); border-radius: var(--radius);
+      font-size: 14px; color: var(--dark); background: var(--white);
+      outline: none; cursor: pointer; font-family: inherit; transition: border-color 0.2s;
     }
-
-    .form-hint {
-      font-size: 11px; color: var(--gray); margin-top: 4px;
+    .filter-select:focus { border-color: var(--primary); }
+    .btn-validate-code {
+      font-size: 13px; font-weight: 600; color: var(--white);
+      background: var(--primary); border: none; border-radius: 8px;
+      padding: 9px 16px; cursor: pointer; transition: all 0.2s;
+      font-family: inherit; display: flex; align-items: center; gap: 6px;
     }
-
-    .btn-create-event {
-      width: 100%; padding: 13px; background: var(--primary);
-      color: white; border: none; border-radius: var(--radius);
-      font-size: 14px; font-weight: 700; cursor: pointer;
+    .btn-validate-code:hover { background: #E67E00; }
+    .btn-delete-all {
+      font-size: 13px; font-weight: 600; color: var(--danger);
+      background: var(--danger-soft); border: 1.5px solid var(--danger);
+      border-radius: 8px; padding: 9px 16px; cursor: pointer;
       transition: all 0.2s; font-family: inherit;
-      box-shadow: 0 2px 8px rgba(232,89,12,0.25);
-    }
-
-    .btn-create-event:hover {
-      background: var(--primary-hover); transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(232,89,12,0.3);
-    }
-
-    .btn-create-event:disabled {
-      background: #CBD5E1; cursor: not-allowed; transform: none; box-shadow: none;
-    }
-
-    .events-list-title {
-      font-size: 17px; font-weight: 800; color: var(--dark);
-      margin-bottom: 16px; letter-spacing: -0.3px;
-    }
-
-    .event-card {
-      background: var(--white); border: 1.5px solid var(--border);
-      border-radius: var(--radius); padding: 20px;
-      margin-bottom: 14px; display: flex; gap: 16px;
-      transition: all 0.2s; box-shadow: var(--shadow-sm);
-    }
-
-    .event-card:hover {
-      border-color: var(--primary); box-shadow: var(--shadow-md);
-    }
-
-    .event-card.expired {
-      background: #F8FAFC; opacity: 0.7;
-    }
-
-    .event-image {
-      width: 100px; height: 100px; object-fit: cover;
-      border-radius: 8px; flex-shrink: 0;
-    }
-
-    .event-image-placeholder {
-      width: 100px; height: 100px; background: linear-gradient(135deg, #FED7AA, #FDBA74);
-      border-radius: 8px; flex-shrink: 0; display: flex;
-      align-items: center; justify-content: center; font-size: 36px;
-    }
-
-    .event-info {
-      flex: 1; display: flex; flex-direction: column; gap: 6px;
-    }
-
-    .event-title {
-      font-size: 15px; font-weight: 700; color: var(--dark);
-    }
-
-    .event-title.expired { color: var(--gray); }
-
-    .event-date {
-      font-size: 12px; color: var(--gray);
-    }
-
-    .event-countdown {
-      font-size: 12px; font-weight: 700; color: var(--primary);
-    }
-
-    .event-status {
-      display: inline-block; padding: 4px 10px; border-radius: 99px;
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .event-status.active {
-      background: var(--success-soft); color: var(--success);
-    }
-
-    .event-status.expired {
-      background: var(--danger-soft); color: var(--danger);
-    }
-
-    .event-actions {
-      display: flex; align-items: center; gap: 8px;
-    }
-
-    .btn-delete-event {
-      padding: 7px 14px; background: var(--danger-soft);
-      color: var(--danger); border: none; border-radius: 99px;
-      font-size: 11px; font-weight: 700; cursor: pointer;
-      transition: all 0.2s; font-family: inherit;
-    }
-
-    .btn-delete-event:hover {
-      background: var(--danger); color: white;
-    }
-
-    .events-empty {
-      text-align: center; padding: 60px 20px; color: var(--gray);
-    }
-
-    .events-empty p { font-size: 13px; }
-
-    /* ---- Historique des événements ---- */
-    .history-kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px; margin-bottom: 24px;
-    }
-
-    .history-toolbar {
-      display: flex; gap: 12px; margin-bottom: 16px;
-      flex-wrap: wrap; align-items: center;
-    }
-
-    .history-filter-select {
-      padding: 10px 16px; border: 1.5px solid var(--border);
-      border-radius: 99px; font-size: 13px;
-      color: var(--dark); background: var(--white);
-      outline: none; cursor: pointer; font-family: inherit;
-      transition: all 0.2s;
-    }
-    .history-filter-select:focus { border-color: var(--primary); }
-
-    .unread-dot {
-      width: 8px; height: 8px;
-      background: var(--primary);
-      border-radius: 50%;
-      display: inline-block;
-      box-shadow: 0 0 0 3px rgba(232,89,12,0.15);
-      animation: dotPulse 2s ease-in-out infinite;
-    }
-
-    @keyframes dotPulse {
-      0%, 100% { box-shadow: 0 0 0 3px rgba(232,89,12,0.15); }
-      50% { box-shadow: 0 0 0 6px rgba(232,89,12,0.06); }
-    }
-
-    .read-dot {
-      width: 8px; height: 8px;
-      display: inline-block;
-    }
-
-    tbody tr.unread-row { background: var(--primary-soft); }
-    tbody tr.unread-row td:first-child { border-left: 3px solid var(--primary); }
-    tbody tr.unread-row .cell-event-title { font-weight: 800; }
-
-    .cell-event-title {
-      font-weight: 600; font-size: 13px; color: var(--dark);
-    }
-
-    .cell-event-desc {
-      font-size: 11px; color: var(--gray); margin-top: 2px;
-      max-width: 250px; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .badge-status {
-      display: inline-block; padding: 3px 10px; border-radius: 99px;
-      font-size: 10px; font-weight: 700; white-space: nowrap;
-    }
-
-    .badge-status.active { background: var(--success-soft); color: var(--success); }
-    .badge-status.expired { background: var(--danger-soft); color: var(--danger); }
-
-    .badge-option {
-      display: inline-block; padding: 2px 8px; border-radius: 99px;
-      font-size: 10px; font-weight: 700; margin-right: 4px;
-    }
-
-    .badge-option.double { background: #ECFDF5; color: #059669; }
-    .badge-option.reward { background: #F3E8FF; color: #7C3AED; }
-
-    .btn-report {
-      background: none; border: 1.5px solid var(--border);
-      border-radius: 99px; padding: 5px 12px; cursor: pointer;
-      color: var(--gray); font-size: 11px; font-weight: 700;
-      display: inline-flex; align-items: center; gap: 5px;
-      line-height: 1; transition: all 0.15s; font-family: inherit;
-    }
-    .btn-report:hover {
-      background: var(--primary-soft); color: var(--primary);
-      border-color: var(--primary);
-    }
-
-    .cell-stat {
-      text-align: center; font-size: 14px; font-weight: 800; color: var(--dark);
-    }
-
-    .cell-stat .stat-icon {
-      font-size: 10px; font-weight: 600; color: var(--gray);
-      display: block; margin-top: 2px;
-    }
-
-    .cell-stat.loading-stat {
-      color: var(--gray); font-weight: 400; font-style: italic; font-size: 12px;
-    }
-
-    .tab-badge {
-      background: var(--primary);
-      color: white;
-      font-size: 9px; font-weight: 800;
-      padding: 2px 7px; border-radius: 99px;
-      margin-left: 6px;
-      line-height: 1.4;
-    }
-
-    .tab-badge:empty, .tab-badge[data-count="0"] { display: none; }
-
-    /* ---- Modale Compte Rendu ---- */
-    .report-backdrop {
-      display: none; position: fixed; inset: 0;
-      background: rgba(15,23,42,0.5); backdrop-filter: blur(4px);
-      z-index: 500; align-items: center; justify-content: center;
-      padding: 20px;
-    }
-    .report-backdrop.show { display: flex; }
-
-    .report-box {
-      background: var(--white); border-radius: 16px;
-      width: 100%; max-width: 560px; max-height: 85vh;
-      box-shadow: var(--shadow-lg);
-      overflow: hidden; animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      display: flex; flex-direction: column;
-    }
-
-    .report-header {
-      padding: 24px 28px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-    }
-
-    .report-header-left { flex: 1; min-width: 0; }
-
-    .report-title {
-      font-size: 19px; font-weight: 800; color: var(--dark); letter-spacing: -0.3px;
-    }
-
-    .report-subtitle {
-      font-size: 12px; color: var(--gray); margin-top: 4px; font-weight: 500;
-    }
-
-    .report-status-badge {
-      display: inline-block; padding: 4px 12px; border-radius: 99px;
-      font-size: 10px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 0.05em; flex-shrink: 0; margin-top: 4px;
-    }
-
-    .report-status-badge.expired {
-      background: var(--danger-soft); color: var(--danger);
-    }
-
-    .report-status-badge.active {
-      background: var(--success-soft); color: var(--success);
-    }
-
-    .report-body {
-      padding: 24px 28px; overflow-y: auto; flex: 1;
-      display: flex; flex-direction: column; gap: 18px;
-    }
-
-    .report-kpi-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-    }
-
-    .report-kpi {
-      background: #F8FAFC;
-      border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px;
-      text-align: center;
-    }
-
-    .report-kpi-value {
-      font-size: 26px; font-weight: 800; color: var(--dark);
-      line-height: 1; letter-spacing: -0.5px;
-    }
-
-    .report-kpi-label {
-      font-size: 10px; font-weight: 700; color: var(--gray);
-      text-transform: uppercase; letter-spacing: 0.06em;
-      margin-top: 6px;
-    }
-
-    .report-kpi.accent {
-      background: var(--primary-soft);
-      border-color: #FDBA74;
-    }
-
-    .report-kpi.accent .report-kpi-value {
-      color: var(--primary);
-    }
-
-    .report-detail-section {
-      background: #F8FAFC;
-      border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 18px;
-    }
-
-    .report-detail-title {
-      font-size: 11px; font-weight: 700; color: var(--gray);
-      text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 12px;
-    }
-
-    .report-option-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 0;
-    }
-
-    .report-option-row + .report-option-row {
-      border-top: 1px solid var(--border);
-    }
-
-    .report-option-check {
-      width: 22px; height: 22px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; flex-shrink: 0;
-    }
-
-    .report-option-check.on {
-      background: var(--success-soft); color: var(--success);
-    }
-
-    .report-option-check.off {
-      background: #F1F5F9; color: var(--gray); border: 1px solid var(--border);
-    }
-
-    .report-option-label {
-      font-size: 12px; color: var(--dark);
-    }
-
-    .report-desc-block {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 8px; padding: 14px;
-      font-size: 13px; color: var(--dark); line-height: 1.5;
-      font-style: italic;
-    }
-
-    .report-footer {
-      padding: 16px 28px 22px;
-      border-top: 1px solid var(--border);
-      display: flex; justify-content: flex-end;
-    }
-
-    /* ---- Coupons ---- */
-    .coupon-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 14px;
-      margin-top: 8px;
-    }
-
-    .coupon-card {
-      background: var(--white);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      position: relative;
-      transition: all 0.2s;
-      box-shadow: var(--shadow-sm);
-    }
-    .coupon-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-
-    .coupon-card.used-all {
-      opacity: 0.4;
-      background: #F8FAFC;
-    }
-
-    .coupon-card-header {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .coupon-title {
-      font-size: 14px; font-weight: 700; color: var(--dark);
-    }
-
-    .coupon-badge-assign {
-      font-size: 10px; font-weight: 700; padding: 3px 10px;
-      border-radius: 99px; white-space: nowrap; flex-shrink: 0;
-    }
-    .coupon-badge-assign.all {
-      background: #EFF6FF; color: #1D4ED8;
-    }
-    .coupon-badge-assign.personal {
-      background: #F5F3FF; color: #6D28D9;
-    }
-
-    .coupon-desc {
-      font-size: 12px; color: var(--gray); margin-bottom: 12px; line-height: 1.4;
-    }
-
-    .coupon-meta {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    }
-
-    .coupon-meta-item {
-      font-size: 11px; color: var(--gray);
-      display: flex; align-items: center; gap: 4px;
-    }
-
-    .coupon-usage-bar {
-      height: 4px; background: #E2E8F0; border-radius: 99px;
-      overflow: hidden; margin: 10px 0 4px;
-    }
-    .coupon-usage-fill {
-      height: 100%; background: linear-gradient(90deg, #FB923C, var(--primary)); border-radius: 99px;
-      transition: width 0.3s;
-    }
-
-    .coupon-actions {
-      display: flex; gap: 8px; margin-top: 12px;
-    }
-
-    .btn-coupon-delete {
-      padding: 6px 12px; font-size: 11px; font-weight: 700;
-      background: var(--danger-soft); color: var(--danger);
-      border: none; border-radius: 99px;
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .btn-coupon-delete:hover { background: var(--danger); color: white; }
-
-    .coupon-section-title {
-      font-size: 15px; font-weight: 800; color: var(--dark);
-      margin: 24px 0 14px; display: flex; align-items: center; gap: 8px;
-      letter-spacing: -0.3px;
-    }
-
-    /* Coupons dans la modale client */
-    .btn-coupon-use {
-      width: 100%; padding: 10px 14px; background: var(--white);
-      border: 1.5px solid #C4B5FD; border-radius: var(--radius);
-      font-size: 12px; font-weight: 600; cursor: pointer;
-      font-family: inherit; transition: all 0.15s;
-      display: flex; align-items: center; justify-content: space-between;
-      color: #5B21B6;
-    }
-    .btn-coupon-use:hover {
-      background: #F5F3FF; border-color: #7C3AED; transform: translateY(-1px);
-    }
-
-    .coupon-use-badge {
-      font-size: 10px; font-weight: 700; padding: 3px 9px;
-      background: #EDE9FE; color: #6D28D9; border-radius: 99px;
-      white-space: nowrap;
-    }
-
-    /* ---- Reward cards ---- */
-    .reward-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 14px; margin-top: 8px;
-    }
-
-    .reward-card {
-      background: var(--white);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      transition: all 0.2s;
-      box-shadow: var(--shadow-sm);
-    }
-    .reward-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-
-    .reward-card-header {
-      display: flex; align-items: center; gap: 14px;
-      padding: 18px 20px 14px;
-    }
-
-    .reward-card-img {
-      width: 48px; height: 48px; border-radius: 10px;
-      object-fit: cover; flex-shrink: 0;
-      border: 1.5px solid var(--border);
-    }
-
-    .reward-card-icon {
-      width: 48px; height: 48px; border-radius: 10px;
-      background: linear-gradient(135deg, #FED7AA, #FDBA74);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; flex-shrink: 0;
-    }
-
-    .reward-card-info { flex: 1; min-width: 0; }
-
-    .reward-card-title {
-      font-size: 14px; font-weight: 700; color: var(--dark);
-    }
-
-    .reward-card-desc {
-      font-size: 11px; color: var(--gray); margin-top: 2px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-
-    .reward-card-pts {
-      font-size: 12px; font-weight: 800;
-      color: var(--primary);
-      background: var(--primary-soft);
-      padding: 4px 12px; border-radius: 99px;
-      white-space: nowrap; flex-shrink: 0;
-    }
-
-    .reward-card-actions {
-      display: flex; gap: 8px; padding: 0 20px 16px;
-    }
-
-    .btn-reward-delete {
-      padding: 6px 12px; font-size: 11px; font-weight: 700;
-      background: var(--danger-soft); color: var(--danger);
-      border: none; border-radius: 99px;
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .btn-reward-delete:hover { background: var(--danger); color: white; }
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-delete-all:hover { background: var(--danger); color: white; }
+    .checkbox-remis:disabled { opacity: 0.4; cursor: not-allowed; }
+    .expired-label { font-size: 11px; color: var(--danger); font-weight: 600; }
+    .pending-label { font-size: 11px; color: var(--gray); font-weight: 600; white-space: nowrap; }
+
+    /* ---- Table ---- */
+    .table-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--gray-light); border-bottom: 1px solid var(--border); }
+    th { padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray); text-align: left; white-space: nowrap; }
+    td { padding: 13px 16px; font-size: 14px; color: var(--dark); border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #FAFAFA; }
+    tr.row-remis td { opacity: 0.55; }
+    tr.row-remis td.cell-remis { opacity: 1; }
+    .cell-person strong { display: block; font-weight: 600; font-size: 14px; }
+    .cell-person span   { display: block; font-size: 12px; color: var(--gray); margin-top: 2px; }
+    .badge-gain { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--primary-soft); color: var(--primary); white-space: nowrap; }
+    .code { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; background: var(--gray-light); padding: 3px 8px; border-radius: 6px; }
+    .cell-date { font-size: 13px; color: var(--gray); white-space: nowrap; }
+    .badge-exp { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .badge-exp.valid   { background: var(--success-soft); color: var(--success); }
+    .badge-exp.expired { background: var(--danger-soft);  color: var(--danger); }
+    .remis-wrap { display: flex; align-items: center; gap: 8px; }
+    .checkbox-remis { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; flex-shrink: 0; }
+    .remis-time { font-size: 12px; color: var(--success); font-weight: 600; white-space: nowrap; }
+    .saving-dot { display: inline-block; width: 8px; height: 8px; border: 2px solid #9CA3AF; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .table-state { padding: 60px 20px; text-align: center; color: var(--gray); }
+    .table-state p { font-size: 14px; }
+    .loading-spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    .result-count { font-size: 13px; color: var(--gray); padding: 10px 16px; border-top: 1px solid var(--border); text-align: right; }
+
+    /* ---- Menu ⋯ ---- */
+    .menu-cell { width: 44px; text-align: center; white-space: nowrap; }
+    .menu-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px; color: var(--gray); font-size: 18px; line-height: 1; transition: background 0.15s, color 0.15s; font-family: inherit; }
+    .menu-btn:hover { background: var(--gray-light); color: var(--dark); }
+    .action-btns { display: inline-flex; gap: 4px; align-items: center; }
+    .action-btn { background: none; border: 1.5px solid var(--border); border-radius: 7px; padding: 5px 7px; cursor: pointer; color: var(--gray); display: inline-flex; align-items: center; line-height: 0; transition: all 0.15s; font-family: inherit; position: relative; }
+    .action-btn:hover { background: var(--gray-light); color: var(--dark); border-color: #9CA3AF; }
+    .action-btn.danger:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+    .action-btn::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: var(--dark); color: #fff; font-size: 11px; font-weight: 500; white-space: nowrap; padding: 4px 8px; border-radius: 5px; pointer-events: none; opacity: 0; transition: opacity 0.15s; font-family: 'Segoe UI', sans-serif; line-height: 1.4; }
+    .action-btn::before { content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: var(--dark); pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+    .action-btn:hover::after, .action-btn:hover::before { opacity: 1; }
+
+    /* ---- Modal suppression ---- */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(2px); z-index: 500; align-items: center; justify-content: center; }
+    .modal-backdrop.show { display: flex; }
+    .modal-box { background: var(--white); border-radius: 16px; padding: 28px 28px 24px; width: 90%; max-width: 360px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); text-align: center; }
+    .modal-icon { width: 48px; height: 48px; background: var(--danger-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+    .modal-icon svg { color: var(--danger); }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+    .modal-sub { font-size: 13px; color: var(--gray); margin-bottom: 24px; line-height: 1.5; }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-cancel { flex: 1; padding: 10px; border: 1.5px solid var(--border); border-radius: 8px; background: none; font-size: 14px; font-weight: 600; color: var(--gray); cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn-cancel:hover { border-color: #9CA3AF; color: var(--dark); }
+    .btn-delete-confirm { flex: 1; padding: 10px; border: none; border-radius: 8px; background: var(--danger); font-size: 14px; font-weight: 700; color: white; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+    .btn-delete-confirm:hover { background: #DC2626; }
+
+    /* ---- Modal Code ---- */
+    .code-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .code-modal.show { display: flex; }
+    .code-modal-content { background: var(--white); border-radius: var(--radius); padding: 32px; max-width: 400px; width: 90%; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+    .code-modal-header { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 16px; }
+    .code-input-wrap { margin-bottom: 20px; }
+    .code-input-label { font-size: 12px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block; }
+    .code-input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; font-family: 'Monaco', 'Courier New', monospace; letter-spacing: 2px; text-transform: uppercase; transition: border-color 0.2s, box-shadow 0.2s; }
+    .code-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,140,0,0.1); }
+    .code-message { font-size: 13px; margin-bottom: 16px; padding: 12px; border-radius: 8px; display: none; }
+    .code-message.show { display: block; }
+    .code-message.success { background: var(--success-soft); color: #047857; border-left: 3px solid var(--success); }
+    .code-message.error   { background: var(--danger-soft);  color: #991b1b; border-left: 3px solid var(--danger); }
+    .code-message.warning { background: #FEF3C7; color: #92400e; border-left: 3px solid #F59E0B; }
+    .code-modal-btns { display: flex; gap: 12px; }
+    .code-modal-btn { flex: 1; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .code-modal-btn.primary { background: var(--primary); color: var(--white); }
+    .code-modal-btn.primary:hover { background: #E67E00; }
+    .code-modal-btn.primary:disabled { background: #D1D5DB; cursor: not-allowed; }
+    .code-modal-btn.secondary { background: var(--gray-light); color: var(--dark); border: 1.5px solid var(--border); }
+    .code-modal-btn.secondary:hover { background: #F3F4F6; }
+
+    /* ---- Config Roue ---- */
+    .config-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+    .config-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; color: var(--dark); }
+    .prize-row { display: grid; grid-template-columns: 1fr 120px 120px 44px; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .prize-header { display: grid; grid-template-columns: 1fr 120px 120px 44px; gap: 10px; margin-bottom: 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray); font-weight: 600; padding: 0 2px; }
+    @media (max-width: 600px) { .prize-row, .prize-header { grid-template-columns: 1fr 80px 80px 36px; gap: 6px; } }
+    .prize-row input { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    .prize-row input:focus { border-color: var(--primary); }
+    .btn-remove-prize { width: 36px; height: 36px; border: 1.5px solid var(--danger); background: var(--danger-soft); color: var(--danger); border-radius: 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .btn-remove-prize:hover { background: var(--danger); color: white; }
+    .btn-add-prize, .btn-save-prize { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 13px; transition: all 0.2s; }
+    .btn-add-prize { background: var(--gray-light); color: var(--dark); border: 1.5px solid var(--border); }
+    .btn-add-prize:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-save-prize { background: var(--primary); color: white; }
+    .btn-save-prize:hover { background: #e07d00; }
+    .btn-save-prize:disabled { opacity: 0.6; cursor: not-allowed; }
+    .config-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .prob-total { font-size: 13px; color: var(--gray); margin-top: 10px; }
+    .prob-total.warn { color: var(--danger); font-weight: 600; }
+
+    /* ---- Event management ---- */
+    .event-form label { display: block; font-size: 12px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .event-form input[type="text"], .event-form input[type="datetime-local"], .event-form textarea, .event-form select {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: inherit; outline: none; transition: border-color 0.2s; margin-bottom: 14px; color: var(--dark); background: var(--white);
+    }
+    .event-form input:focus, .event-form textarea:focus, .event-form select:focus { border-color: var(--primary); }
+    .event-form textarea { resize: vertical; min-height: 60px; }
+    .form-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 500px) { .form-row-2col { grid-template-columns: 1fr; } }
+    .event-display-options { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .toggle-option { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--dark); cursor: pointer; padding: 8px 14px; border: 1.5px solid var(--border); border-radius: 8px; transition: all 0.2s; user-select: none; }
+    .toggle-option:has(input:checked) { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+    .toggle-option input { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
+    .range-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .range-row input[type="range"] { flex: 1; accent-color: var(--primary); height: 6px; }
+    .range-value { font-size: 18px; font-weight: 800; color: var(--primary); min-width: 42px; text-align: center; }
+    .redistribution-preview { background: var(--gray-light); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 14px; }
+    .redistribution-preview h5 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray); margin-bottom: 8px; }
+    .redist-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 3px 0; }
+    .redist-label { color: var(--dark); font-weight: 500; }
+    .redist-values { display: flex; gap: 6px; align-items: center; }
+    .redist-old { color: var(--gray); text-decoration: line-through; font-size: 12px; }
+    .redist-new { color: var(--primary); font-weight: 700; }
+    .redist-arrow { color: var(--gray); font-size: 10px; }
+    .event-active-card { border-left: 3px solid var(--success); background: var(--success-soft); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .event-active-card h4 { font-size: 15px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+    .event-active-card p { font-size: 13px; color: var(--gray); margin: 2px 0; }
+    .event-inactive-msg { text-align: center; padding: 20px; color: var(--gray); font-size: 14px; }
+
+    /* ---- Historique événements ---- */
+    .event-history-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .event-history-table th { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--gray); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .event-history-table td { font-size: 13px; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--dark); vertical-align: middle; }
+    .event-history-table tr:last-child td { border-bottom: none; }
+    .badge-evt { display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .badge-evt.active   { background: var(--success-soft); color: var(--success); }
+    .badge-evt.archived { background: var(--gray-light);   color: var(--gray); }
+    .badge-evt.expired  { background: var(--danger-soft);  color: var(--danger); }
+    .badge-maxqty { display: inline-block; font-size: 11px; color: var(--gray); background: var(--gray-light); padding: 2px 7px; border-radius: 6px; margin-left: 4px; border: 1px solid var(--border); }
+    .event-color-row { display: flex; gap: 14px; align-items: flex-end; margin-bottom: 14px; }
+    .event-color-row > div { flex: 1; }
+    .event-color-row input[type="color"] { width: 100%; height: 38px; border: 1.5px solid var(--border); border-radius: 8px; padding: 2px; cursor: pointer; }
+
+    /* ---- Toast ---- */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--dark); color: white; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 9999; transition: transform 0.3s ease; pointer-events: none; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
 
     /* ---- Responsive ---- */
-    @media (max-width: 768px) {
-      .topbar { padding: 0 14px; height: 54px; }
-      .topbar-name { font-size: 14px; }
-      .topbar-logo { width: 30px; height: 30px; border-radius: 8px; }
-      .page   { padding: 16px 12px; }
-      .page-title { font-size: 20px; }
-      .page-subtitle { font-size: 11px; }
+    @media (max-width: 600px) {
+      .topbar { padding: 0 16px; }
+      .page { padding: 20px 14px; }
+      .page-title { font-size: 18px; }
       .user-badge { display: none; }
-      .btn-logout { font-size: 11px; padding: 5px 12px; }
-
-      .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-      .kpi-card { padding: 14px 16px; }
-      .kpi-value { font-size: 22px; }
-      .kpi-label { font-size: 10px; }
-
-      .toolbar { flex-direction: column; gap: 8px; }
-      .search-wrap { min-width: 100%; }
-      .filter-select { width: 100%; }
-
-      th:nth-child(5), td:nth-child(5),
-      th:nth-child(6), td:nth-child(6) { display: none; }
-      th { font-size: 10px; padding: 10px 8px; }
-      td { padding: 10px 8px; font-size: 12px; }
-      .cell-person strong { font-size: 12px; }
-      .cell-person span { font-size: 10px; }
-      .code { font-size: 10px; padding: 2px 5px; }
-      .rank-badge { width: 22px; height: 22px; font-size: 10px; }
-      .btn-manage { padding: 5px 10px; font-size: 10px; }
-
-      .modal-backdrop { padding: 0; align-items: flex-end; }
-      .modal-box {
-        max-width: 100%; border-radius: 20px 20px 0 0;
-        max-height: 92vh; overflow-y: auto;
-        animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      @keyframes modalSlideUp {
-        from { transform: translateY(100%); }
-        to   { transform: translateY(0); }
-      }
-      .modal-header { flex-wrap: wrap; padding: 16px 18px 12px; gap: 8px; }
-      .modal-points-pill { font-size: 18px; padding: 6px 14px; }
-      .modal-body { padding: 16px 18px; gap: 12px; }
-      .modal-section { padding: 14px; }
-      .modal-section-title { font-size: 10px; margin-bottom: 10px; }
-      .points-input-row { flex-direction: column; gap: 8px; }
-      .btn-add-points { width: 100%; text-align: center; }
-      .modal-footer { padding: 12px 18px 16px; }
-
-      .report-backdrop { padding: 0; align-items: flex-end; }
-      .report-box {
-        max-width: 100%; border-radius: 20px 20px 0 0;
-        max-height: 92vh; animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      .report-header { padding: 18px 20px 14px; }
-      .report-title { font-size: 17px; }
-      .report-body { padding: 18px 20px; }
-      .report-kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .report-kpi { padding: 12px; }
-      .report-kpi-value { font-size: 20px; }
-
-      .event-form-card { padding: 18px; }
-      .event-form-title { font-size: 15px; }
-      div[style*="grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important;
-      }
-
-      .event-card { flex-direction: column; }
-      .event-image, .event-image-placeholder { width: 100%; height: 140px; }
-
-      .active-card { padding: 14px; }
-      .ac-btn { padding: 8px 14px; font-size: 11px; }
-      .ac-actions { flex-wrap: wrap; }
-
-      .reward-grid, .coupon-grid { grid-template-columns: 1fr; }
-
-      .collapsible-toggle { padding: 12px 14px; font-size: 12px; }
-
-      #collapsible-events-history th:nth-child(3),
-      #collapsible-events-history td:nth-child(3),
-      #collapsible-events-history th:nth-child(4),
-      #collapsible-events-history td:nth-child(4),
-      #collapsible-events-history th:nth-child(5),
-      #collapsible-events-history td:nth-child(5) { display: none; }
     }
-
-    /* ---- FAB Scanner QR (mobile only) ---- */
-    .fab-scan {
-      display: none;
-      position: fixed;
-      bottom: 24px; right: 20px;
-      width: 56px; height: 56px;
-      background: var(--primary);
-      color: white;
-      border: none; border-radius: 50%;
-      box-shadow: 0 4px 20px rgba(232,89,12,0.35);
-      cursor: pointer;
-      z-index: 200;
-      align-items: center; justify-content: center;
-      transition: all 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .fab-scan:active { transform: scale(0.9); }
-    .fab-scan:hover { box-shadow: 0 6px 24px rgba(232,89,12,0.45); }
-    .fab-scan svg { width: 26px; height: 26px; }
-
-    @media (max-width: 768px) {
-      .fab-scan { display: flex; }
-    }
-
-    /* ---- QR Scanner Modal ---- */
-    .qr-modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(15,23,42,0.9);
-      z-index: 600; align-items: center; justify-content: center;
-      flex-direction: column; padding: 20px;
-    }
-    .qr-modal-overlay.show { display: flex; }
-
-    .qr-modal-box {
-      background: var(--white); border-radius: 16px;
-      width: 100%; max-width: 380px;
-      overflow: hidden; animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .qr-modal-header {
-      padding: 18px 20px 14px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .qr-modal-header h3 {
-      font-size: 15px; font-weight: 700; color: var(--dark);
-      display: flex; align-items: center; gap: 8px;
-    }
-
-    #qr-reader {
-      width: 100%;
-      background: #000;
-    }
-    #qr-reader video { border-radius: 0 !important; }
-
-    .qr-modal-footer {
-      padding: 14px 20px 18px;
-      text-align: center;
-    }
-
-    .qr-status {
-      font-size: 12px; color: var(--gray);
-      padding: 10px 16px;
-      text-align: center; font-weight: 500;
-    }
-    .qr-status.found {
-      color: var(--success); font-weight: 600;
-      background: var(--success-soft);
-    }
-    .qr-status.error {
-      color: var(--danger); font-weight: 600;
-      background: var(--danger-soft);
-    }
-
-    .btn-qr-close {
-      padding: 9px 22px; background: #F1F5F9;
-      border: none; border-radius: 99px;
-      font-size: 13px; font-weight: 600; color: var(--gray);
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .btn-qr-close:hover { background: #E2E8F0; color: var(--dark); }
-
-    @media (max-width: 768px) {
-      .grid-2col { grid-template-columns: 1fr !important; }
-    }
-
-    /* --- MODAL CONFIRMATION MDP --- */
-    .pwd-modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15,23,42,0.5);
-      backdrop-filter: blur(4px);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-    }
-    .pwd-modal-overlay.show { display: flex; }
-    .pwd-modal {
-      background: white;
-      border-radius: 16px;
-      padding: 30px 28px;
-      max-width: 380px;
-      width: 90%;
-      box-shadow: var(--shadow-lg);
-      text-align: center;
-    }
-    .pwd-modal h3 {
-      font-size: 1.1rem;
-      font-weight: 800;
-      margin-bottom: 6px;
-      color: var(--dark);
-    }
-    .pwd-modal p {
-      font-size: 0.82rem;
-      color: var(--gray);
-      margin-bottom: 18px;
-    }
-    .pwd-modal input {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      font-size: 1rem;
-      font-family: inherit;
-      outline: none;
-      transition: all 0.2s;
-      margin-bottom: 10px;
-    }
-    .pwd-modal input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(232,89,12,0.08); }
-    .pwd-modal-error {
-      color: var(--danger);
-      font-size: 0.8rem;
-      font-weight: 600;
-      display: none;
-      margin-bottom: 10px;
-    }
-    .pwd-modal-actions {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .pwd-modal-actions button {
-      flex: 1;
-      padding: 11px;
-      border-radius: 99px;
-      font-weight: 700;
-      font-size: 0.9rem;
-      cursor: pointer;
-      font-family: inherit;
-      border: none;
-      transition: all 0.2s;
-    }
-    .pwd-modal-cancel {
-      background: #F1F5F9;
-      color: var(--dark);
-    }
-    .pwd-modal-cancel:hover { background: #E2E8F0; }
-    .pwd-modal-confirm {
-      background: var(--primary);
-      color: white;
-    }
-    .pwd-modal-confirm:hover { background: var(--primary-hover); }
-    .pwd-modal-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* --- PANEL GESTION ACTIFS --- */
-    .active-panel { margin-top: 24px; }
-    .active-panel-title {
-      font-size: 14px; font-weight: 800; color: var(--dark);
-      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
-      letter-spacing: -0.2px;
-    }
-    .active-card {
-      background: white; border: 1.5px solid var(--border); border-radius: var(--radius);
-      padding: 16px; margin-bottom: 10px; transition: all 0.2s;
-      box-shadow: var(--shadow-sm);
-    }
-    .active-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-    .active-card.is-primary { border-color: var(--primary); background: var(--primary-soft); }
-    .active-card .ac-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .active-card .ac-title { font-weight: 700; font-size: 13px; color: var(--dark); }
-    .active-card .ac-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
-    .ac-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.02em; }
-    .ac-badge.primary { background: var(--primary); color: white; }
-    .ac-badge.double { background: #D1FAE5; color: #065F46; }
-    .ac-badge.reward { background: #EDE9FE; color: #5B21B6; }
-    .ac-badge.started { background: #DBEAFE; color: #1E40AF; }
-    .ac-badge.waiting { background: #FEF3C7; color: #92400E; }
-    .ac-badge.all { background: #DBEAFE; color: #1E40AF; }
-    .ac-badge.personal { background: #EDE9FE; color: #5B21B6; }
-    .active-card .ac-meta { font-size: 11px; color: var(--gray); margin-bottom: 8px; line-height: 1.7; }
-    .active-card .ac-actions { display: flex; gap: 6px; }
-    .ac-btn {
-      padding: 6px 14px; border-radius: 99px; font-size: 11px; font-weight: 700;
-      cursor: pointer; border: 1.5px solid var(--border); background: white;
-      color: var(--dark); transition: all 0.2s; font-family: inherit;
-    }
-    .ac-btn:hover { background: #F1F5F9; }
-    .ac-btn.primary-btn { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
-    .ac-btn.primary-btn:hover { background: #FED7AA; }
-    .ac-btn.delete-btn { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
-    .ac-btn.delete-btn:hover { background: var(--danger); color: white; }
-
-    /* --- BOUTON DÉROULANT HISTORIQUE --- */
-    .collapsible-toggle {
-      width: 100%; margin-top: 20px; padding: 14px 18px;
-      background: white; border: 1.5px solid var(--border); border-radius: var(--radius);
-      font-family: inherit; font-size: 13px; font-weight: 700; color: var(--dark);
-      cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-      transition: all 0.2s; box-shadow: var(--shadow-sm);
-    }
-    .collapsible-toggle:hover { background: #F8FAFC; border-color: #CBD5E1; transform: translateY(-1px); }
-    .collapsible-toggle .toggle-arrow { transition: transform 0.3s; font-size: 11px; }
-    .collapsible-toggle.open .toggle-arrow { transform: rotate(180deg); }
-    .collapsible-content {
-      display: none; margin-top: 12px; animation: tabFadeIn 0.3s ease;
-    }
-    .collapsible-content.open { display: block; }
-    @keyframes tabFadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* --- ÉDITEUR RICHE --- */
-    .rte-wrap {
-      border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden;
-      transition: all 0.2s;
-    }
-    .rte-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(232,89,12,0.08); }
-    .rte-toolbar {
-      display: flex; gap: 2px; padding: 6px 8px; background: #F8FAFC;
-      border-bottom: 1px solid var(--border);
-    }
-    .rte-btn {
-      width: 30px; height: 28px; border: none; border-radius: 6px; background: transparent;
-      cursor: pointer; font-size: 13px; font-weight: 700; color: var(--gray);
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s; font-family: inherit;
-    }
-    .rte-btn:hover { background: white; color: var(--dark); box-shadow: var(--shadow-sm); }
-    .rte-btn.active { background: var(--primary); color: white; }
-    .rte-editor {
-      min-height: 80px; max-height: 200px; overflow-y: auto;
-      padding: 12px 14px; font-size: 13px; line-height: 1.6;
-      color: var(--dark); outline: none; font-family: inherit;
-    }
-    .rte-editor:empty::before {
-      content: attr(data-placeholder); color: #94A3B8; pointer-events: none;
-    }
-    .rte-editor b, .rte-editor strong { font-weight: 700; }
-    .rte-editor i, .rte-editor em { font-style: italic; }
-    .rte-editor u { text-decoration: underline; }
-    .rte-editor ul, .rte-editor ol { padding-left: 20px; margin: 4px 0; }
-
   </style>
 </head>
 <body>
@@ -1416,510 +324,165 @@
 
 <!-- Page -->
 <main class="page">
-
   <div class="page-header">
-    <h1 class="page-title">Dashboard Fidélité</h1>
-    <p class="page-subtitle" id="page-subtitle">Gestion des membres</p>
+    <h1 class="page-title">Dashboard Roue</h1>
+    <p class="page-subtitle" id="page-subtitle">Gestion des gains de vos participants</p>
   </div>
 
   <!-- Onglets -->
   <div class="tabs-nav-wrap">
     <button class="tabs-arrow tabs-arrow-left" id="tabs-arrow-left" onclick="scrollTabs(-1)">‹</button>
     <div class="tabs-nav" id="tabs-nav">
-      <button class="tab-btn active" onclick="switchTab('members')">
-        👥 Membres
-      </button>
-      <button class="tab-btn" onclick="switchTab('events')">
-        📅 Événements
-      </button>
-      <button class="tab-btn" onclick="switchTab('coupons')" id="tab-btn-coupons">
-        🎟️ Coupons
-      </button>
-      <button class="tab-btn" onclick="switchTab('rewards')" id="tab-btn-rewards">
-        ⭐ Récompenses
-      </button>
+      <button class="tab-btn active" id="tab-btn-gains" onclick="switchTab('gains')">🎁 Gestion des gains</button>
+      <button class="tab-btn" id="tab-btn-config" onclick="switchTab('config')">🎡 Configuration Roue</button>
     </div>
     <button class="tabs-arrow tabs-arrow-right" id="tabs-arrow-right" onclick="scrollTabs(1)">›</button>
   </div>
 
-  <!-- CONTENU MEMBRES -->
-  <div class="tab-content active" id="tab-members">
-  
-  <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="kpi-card accent">
-      <div class="kpi-label">Total membres</div>
-      <div class="kpi-value" id="kpi-total">—</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Points en circulation</div>
-      <div class="kpi-value" id="kpi-points">—</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Moyenne des points</div>
-      <div class="kpi-value" id="kpi-tiers">—</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Top client</div>
-      <div class="kpi-value" id="kpi-top" style="font-size:18px; padding-top: 4px;">—</div>
-    </div>
-  </div>
+  <!-- ============ TAB: Gestion des gains ============ -->
+  <div class="tab-content active" id="tab-gains">
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <div class="search-wrap">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      <input type="text" class="search-input" id="search-input"
-             placeholder="Rechercher un prénom, email ou code…"
-             oninput="applyFilters()">
-    </div>
-    <select class="filter-select" id="filter-tier" onchange="applyFilters()">
-      <option value="">Tous les paliers</option>
-      <option value="0">Aucun palier</option>
-      <option value="40">Palier 1 (40+ pts)</option>
-      <option value="80">Palier 2 (80+ pts)</option>
-      <option value="150">Palier 3 (150+ pts)</option>
-      <option value="200">Palier 4 (200+ pts)</option>
-      <option value="260">Palier 5 (260+ pts)</option>
-    </select>
-  </div>
-
-  <!-- Tableau -->
-  <div class="table-card">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Membre</th>
-            <th>Code</th>
-            <th>Points</th>
-            <th>Progression</th>
-            <th>Dernière activité</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="table-body">
-          <tr>
-            <td colspan="7">
-              <div class="table-state">
-                <div class="loading-spinner"></div>
-                <p>Chargement des membres…</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="result-count" id="result-count" style="display:none"></div>
-  </div>
-
-  </div>
-  <!-- FIN CONTENU MEMBRES -->
-
-  <!-- CONTENU ÉVÉNEMENTS -->
-  <div class="tab-content" id="tab-events">
-    
-    <!-- Formulaire création événement -->
-    <div class="event-form-card">
-      <h2 class="event-form-title">
-        <span>➕</span> Créer un événement
-      </h2>
-
-      <div class="form-group">
-        <label class="form-label">Nom de l'événement</label>
-        <input type="text" id="event-title" class="form-input" 
-          placeholder="Ex: Soldes d'été, Fête de la musique...">
+    <div class="kpi-grid">
+      <div class="kpi-card accent">
+        <div class="kpi-label">Total participants</div>
+        <div class="kpi-value" id="kpi-total">—</div>
       </div>
-
-      <div class="form-group">
-        <label class="form-label">Description de l'événement</label>
-        <div class="rte-wrap">
-          <div class="rte-toolbar">
-            <button type="button" class="rte-btn" onclick="rteCmd('bold')" title="Gras"><b>G</b></button>
-            <button type="button" class="rte-btn" onclick="rteCmd('italic')" title="Italique"><i>I</i></button>
-            <button type="button" class="rte-btn" onclick="rteCmd('underline')" title="Souligné"><u>S</u></button>
-            <button type="button" class="rte-btn" onclick="rteCmd('insertUnorderedList')" title="Liste">☰</button>
-          </div>
-          <div id="event-description" class="rte-editor" contenteditable="true"
-            data-placeholder="Ex: Profitez de nos offres exceptionnelles pendant tout le week-end !"></div>
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Gains remis</div>
+        <div class="kpi-value" id="kpi-remis">—</div>
       </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-        <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label">🟢 Date et heure de début</label>
-          <input type="datetime-local" id="event-startdate" class="form-input">
-          <p class="form-hint">Quand l'événement devient actif</p>
-        </div>
-        <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label">🔴 Date et heure de fin</label>
-          <input type="datetime-local" id="event-deadline" class="form-input">
-          <p class="form-hint">Quand l'événement expire</p>
-        </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Gains expirés</div>
+        <div class="kpi-value" id="kpi-expires">—</div>
       </div>
+    </div>
 
-      <div class="form-group">
-        <label class="form-label">Options de l'événement</label>
-        <div style="background: var(--gray-light); padding: 16px; border-radius: 8px; border: 1.5px solid var(--border);">
-          
-          <label style="display: flex; align-items: start; gap: 10px; margin-bottom: 12px; cursor: pointer;">
-            <input type="checkbox" id="option-double-points" 
-              style="margin-top: 3px; width: 18px; height: 18px; cursor: pointer;">
-            <div>
-              <div style="font-weight: 600; color: var(--dark); font-size: 14px;">
-                🎯 Points x2 sur les commandes
-              </div>
-              <div style="font-size: 12px; color: var(--gray); margin-top: 2px;">
-                Les clients gagnent le double de points sur leurs achats pendant l'événement
-              </div>
-            </div>
-          </label>
-
-          <label style="display: flex; align-items: start; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="option-special-reward" 
-              style="margin-top: 3px; width: 18px; height: 18px; cursor: pointer;">
-            <div>
-              <div style="font-weight: 600; color: var(--dark); font-size: 14px;">
-                🎁 Récompense spéciale temporaire
-              </div>
-              <div style="font-size: 12px; color: var(--gray); margin-top: 2px;">
-                Ajoute une récompense exclusive disponible uniquement pendant l'événement
-              </div>
-              <div style="margin-top: 8px; display: none;" id="reward-details-container">
-                <input type="text" id="reward-name" placeholder="Nom de la récompense" 
-                  style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; margin-bottom: 6px;">
-                <input type="number" id="reward-points" placeholder="Points nécessaires" 
-                  style="width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;">
-              </div>
-            </div>
-          </label>
-
-        </div>
+    <div class="toolbar">
+      <button class="btn-validate-code" onclick="openCodeModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+          <path d="M12 7v5l3.5 2.1"/>
+        </svg>
+        Valider un code
+      </button>
+      <div class="search-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Rechercher un prénom ou e-mail…" oninput="applyFilters()">
       </div>
-
-      <button class="btn-create-event" onclick="createNewEvent()">
-        🚀 Publier l'événement
+      <select class="filter-select" id="filter-gain" onchange="applyFilters()">
+        <option value="">Tous les gains</option>
+      </select>
+      <select class="filter-select" id="filter-statut" onchange="applyFilters()">
+        <option value="">Tous les statuts</option>
+        <option value="remis">Remis</option>
+        <option value="non-remis">Non remis</option>
+        <option value="expire">Expirés</option>
+      </select>
+      <button class="btn-delete-all" onclick="openDeleteAllModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+        </svg>
+        Supprimer l'historique
       </button>
     </div>
 
-    <script>
-      // Afficher/masquer les champs conditionnels
-      document.getElementById('option-special-reward').addEventListener('change', function(e) {
-        document.getElementById('reward-details-container').style.display = e.target.checked ? 'block' : 'none';
-      });
-    </script>
-
-    <!-- Panel événements actifs -->
-    <div class="active-panel">
-      <div class="active-panel-title">📡 Événements en cours</div>
-      <div id="active-events-list">
-        <div class="events-empty"><p>Chargement…</p></div>
+    <div class="table-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Participant</th>
+              <th>Gain remporté</th>
+              <th>Code</th>
+              <th>Expiration</th>
+              <th>Date de jeu</th>
+              <th>Remis</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="7"><div class="table-state"><div class="loading-spinner"></div><p>Chargement des données…</p></div></td></tr>
+          </tbody>
+        </table>
       </div>
+      <div class="result-count" id="result-count" style="display:none"></div>
     </div>
-
-    <!-- Historique événements (déroulant) -->
-    <button class="collapsible-toggle" onclick="toggleCollapsible('events-history', this)">
-      <span>📜 Historique des événements</span>
-      <span class="toggle-arrow">▼</span>
-    </button>
-    <div class="collapsible-content" id="collapsible-events-history">
-      <div class="history-toolbar" style="margin-top:4px;">
-        <div class="search-wrap">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" class="search-input" id="history-search" placeholder="Rechercher un événement…" oninput="filterHistory()">
-        </div>
-        <select class="history-filter-select" id="history-filter-status" onchange="filterHistory()">
-          <option value="">Tous les statuts</option>
-          <option value="active">En cours</option>
-          <option value="expired">Terminés</option>
-        </select>
-      </div>
-      <div class="table-card" style="margin-top:12px;">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Événement</th>
-                <th>Statut</th>
-                <th>Participants</th>
-                <th>Commandes</th>
-                <th>Options</th>
-                <th>Date de fin</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="history-table-body">
-              <tr><td colspan="7"><div class="table-state"><p>Cliquez pour charger…</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="result-count" id="history-result-count" style="display:none"></div>
-      </div>
-    </div>
-
   </div>
-  <!-- FIN CONTENU ÉVÉNEMENTS -->
 
-  <!-- CONTENU COUPONS -->
-  <div class="tab-content" id="tab-coupons">
-
-    <!-- Formulaire création coupon -->
-    <div class="event-form-card">
-      <h2 class="event-form-title">
-        <span>🎟️</span> Créer un coupon
-      </h2>
-
-      <div class="form-group">
-        <label class="form-label">Nom du coupon</label>
-        <input type="text" id="coupon-title" class="form-input"
-          placeholder="Ex: Dessert offert, -10% sur la note, Boisson gratuite…">
+  <!-- ============ TAB: Configuration Roue ============ -->
+  <div class="tab-content" id="tab-config">
+    <div class="config-card">
+      <h3>🎯 Configuration des lots</h3>
+      <p style="font-size:13px; color:var(--gray); margin-bottom:16px;">
+        Modifiez les noms, le nombre de lots et les probabilités. La somme des probabilités doit faire 100%. Le nombre de lots doit être pair pour alterner correctement les couleurs.
+      </p>
+      <div class="prize-header">
+        <span>Nom du lot</span>
+        <span>Probabilité (%)</span>
+        <span>Nb max (optionnel)</span>
+        <span></span>
       </div>
-
-      <div class="form-group">
-        <label class="form-label">Description / avantage</label>
-        <textarea id="coupon-desc" class="form-input" rows="2"
-          placeholder="Ex: Un dessert au choix parmi notre carte, offert lors de votre prochaine visite."
-          style="resize: vertical; min-height: 60px;"></textarea>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Attribuer à</label>
-          <select id="coupon-assign" class="form-input" onchange="toggleCouponMemberSelect()">
-            <option value="all">👥 Tous les membres</option>
-            <option value="specific">👤 Un membre spécifique</option>
-          </select>
-        </div>
-        <div class="form-group" style="margin-bottom:0;" id="coupon-member-wrap">
-          <label class="form-label">Choisir le membre</label>
-          <select id="coupon-member-select" class="form-input">
-            <option value="">— Sélectionnez —</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group" style="margin-top:16px;">
-        <label class="form-label">Date d'expiration <span style="font-weight:400; color:var(--gray);">(optionnel)</span></label>
-        <input type="datetime-local" id="coupon-expiry" class="form-input">
-        <p class="form-hint">Laisser vide pour un coupon sans expiration</p>
-      </div>
-
-      <button class="btn-create-event" onclick="createCoupon()" id="btn-create-coupon">
-        🎟️ Créer le coupon
-      </button>
-    </div>
-
-    <!-- Coupons actifs (déroulant) -->
-    <button class="collapsible-toggle" onclick="toggleCollapsible('coupons-active', this)">
-      <span>📋 Coupons actifs</span>
-      <span class="toggle-arrow">▼</span>
-    </button>
-    <div class="collapsible-content" id="collapsible-coupons-active">
-      <div id="active-coupons-list" style="margin-top:8px;">
-        <div class="events-empty"><p>Chargement…</p></div>
+      <div id="prizes-container"></div>
+      <div class="prob-total" id="prob-total">Total : —%</div>
+      <div class="config-actions">
+        <button class="btn-add-prize" onclick="addPrizeRow()">+ Ajouter un lot</button>
+        <button class="btn-save-prize" id="btn-save-config" onclick="saveWheelConfig()">💾 Enregistrer</button>
       </div>
     </div>
-
-    <!-- Historique coupons distribués (déroulant) -->
-    <button class="collapsible-toggle" onclick="toggleCollapsible('coupons-sent', this)">
-      <span>📤 Historique distribués</span>
-      <span class="toggle-arrow">▼</span>
-    </button>
-    <div class="collapsible-content" id="collapsible-coupons-sent">
-      <div class="table-card" style="margin-top:8px;">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Coupon</th>
-                <th>Attribué à</th>
-                <th>Expiration</th>
-                <th>Créé le</th>
-              </tr>
-            </thead>
-            <tbody id="coupon-sent-body">
-              <tr><td colspan="4"><div class="table-state"><p>Cliquez pour charger…</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Historique coupons consommés (déroulant) -->
-    <button class="collapsible-toggle" onclick="toggleCollapsible('coupons-consumed', this)">
-      <span>✅ Historique consommés</span>
-      <span class="toggle-arrow">▼</span>
-    </button>
-    <div class="collapsible-content" id="collapsible-coupons-consumed">
-      <div class="table-card" style="margin-top:8px;">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Membre</th>
-                <th>Coupon utilisé</th>
-                <th>Consommé le</th>
-              </tr>
-            </thead>
-            <tbody id="coupon-consumed-body">
-              <tr><td colspan="3"><div class="table-state"><p>Cliquez pour charger…</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
   </div>
-  <!-- FIN CONTENU COUPONS -->
 
-  <!-- CONTENU RÉCOMPENSES -->
-  <div class="tab-content" id="tab-rewards">
-
-    <!-- Formulaire création récompense -->
-    <div class="event-form-card">
-      <h2 class="event-form-title">
-        <span>➕</span> Ajouter une récompense
-      </h2>
-
-      <div class="form-group">
-        <label class="form-label">Nom de la récompense</label>
-        <input type="text" id="reward-title-input" class="form-input"
-          placeholder="Ex: Boisson offerte, Dessert au choix, Menu complet…">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Description</label>
-        <input type="text" id="reward-desc-input" class="form-input"
-          placeholder="Ex: Une boisson chaude ou froide au choix">
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Points nécessaires</label>
-          <input type="number" id="reward-points-input" class="form-input"
-            placeholder="Ex: 40" min="1">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">URL de l'image <span style="font-weight:400; color:var(--gray);">(optionnel)</span></label>
-          <input type="url" id="reward-image-input" class="form-input"
-            placeholder="https://exemple.com/image.jpg">
-          <p class="form-hint">L'image remplace l'icône étoile côté client</p>
-        </div>
-      </div>
-
-      <button class="btn-create-event" onclick="createReward()" id="btn-create-reward" style="margin-top:16px;">
-        ⭐ Ajouter la récompense
-      </button>
-    </div>
-
-    <!-- Liste des récompenses -->
-    <div class="coupon-section-title">📋 Récompenses configurées</div>
-    <div id="rewards-list">
-      <div class="events-empty"><p>Chargement…</p></div>
-    </div>
-
-  </div>
-  <!-- FIN CONTENU RÉCOMPENSES -->
 
 </main>
 
-<!-- Modale Compte Rendu -->
-<div class="report-backdrop" id="report-modal" onclick="handleReportBackdropClick(event)">
-  <div class="report-box">
-
-    <div class="report-header">
-      <div class="report-header-left">
-        <div class="report-title" id="report-title">—</div>
-        <div class="report-subtitle" id="report-subtitle">—</div>
-      </div>
-      <span class="report-status-badge expired" id="report-status">TERMINÉ</span>
-      <button class="modal-close" onclick="closeReportModal()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+<!-- Modal suppression -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
     </div>
-
-    <div class="report-body">
-      <!-- Description -->
-      <div id="report-desc-container" style="display:none;">
-        <div class="report-desc-block" id="report-description"></div>
-      </div>
-
-      <!-- KPIs du rapport -->
-      <div class="report-kpi-grid" id="report-kpis">
-      </div>
-
-      <!-- Options actives -->
-      <div class="report-detail-section" id="report-options-section">
-        <div class="report-detail-title">Options de l'événement</div>
-        <div id="report-options"></div>
-      </div>
+    <div class="modal-title">Supprimer ce participant ?</div>
+    <div class="modal-sub" id="delete-modal-sub">Cette action est irréversible.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn-delete-confirm" onclick="confirmDelete()">Supprimer</button>
     </div>
-
-    <div class="report-footer">
-      <button class="btn-close-modal" onclick="closeReportModal()">Fermer</button>
-    </div>
-
   </div>
 </div>
 
-<!-- Modale gestion client -->
-<div class="modal-backdrop" id="client-modal" onclick="handleModalBackdropClick(event)">
+<!-- Modal suppression tout l'historique -->
+<div class="modal-backdrop" id="delete-all-modal">
   <div class="modal-box">
-
-    <div class="modal-header">
-      <div class="modal-client-info">
-        <div class="modal-client-name" id="modal-name">—</div>
-        <div class="modal-client-email" id="modal-email">—</div>
-        <div style="margin-top: 6px; font-size: 12px; color: var(--gray);">
-          Code : <span class="code" id="modal-code">—</span>
-        </div>
-      </div>
-      <div class="modal-points-pill" id="modal-points">— <span>pts</span></div>
-      <button class="modal-close" onclick="closeModal()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+    <div class="modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
     </div>
-
-    <div class="modal-body">
-
-      <!-- Section ajout de points -->
-      <div class="modal-section">
-        <div class="modal-section-title">Ajouter des points</div>
-        <div class="points-input-row">
-          <input type="number" class="points-input" id="modal-amount"
-                 placeholder="Montant de l'addition (€)" min="0" step="0.01">
-          <button class="btn-add-points" id="btn-add" onclick="addPoints()">Valider</button>
-        </div>
-      </div>
-
-      <!-- Section récompenses -->
-      <div class="modal-section">
-        <div class="modal-section-title">Utiliser une récompense</div>
-        <div class="rewards-grid" id="modal-rewards">
-          <p class="no-rewards">Sélectionnez un client pour voir ses récompenses.</p>
-        </div>
-      </div>
-
-      <!-- Section coupons -->
-      <div class="modal-section" id="modal-coupons-section">
-        <div class="modal-section-title">🎟️ Coupons disponibles</div>
-        <div class="rewards-grid" id="modal-coupons-list">
-          <p class="no-rewards">Chargement des coupons…</p>
-        </div>
-      </div>
-
-      <!-- Feedback -->
-      <div class="modal-feedback" id="modal-feedback"></div>
-
+    <div class="modal-title">Supprimer tout l'historique ?</div>
+    <div class="modal-sub" id="delete-all-modal-sub">Tous les participants et leurs gains seront supprimés définitivement. Cette action est irréversible.</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDeleteAllModal()">Annuler</button>
+      <button class="btn-delete-confirm" id="btn-delete-all-confirm" onclick="confirmDeleteAll()">Tout supprimer</button>
     </div>
+  </div>
+</div>
 
-    <div class="modal-footer">
-      <button class="btn-close-modal" onclick="closeModal()">Fermer</button>
+<!-- Modal validation code -->
+<div class="code-modal" id="code-modal">
+  <div class="code-modal-content">
+    <div class="code-modal-header">Valider un code gagnant</div>
+    <div class="code-input-wrap">
+      <label class="code-input-label">Entrez le code</label>
+      <input type="text" class="code-input" id="code-input" placeholder="XXXX" onkeydown="if(event.key === 'Enter') validateCode()">
     </div>
-
+    <div class="code-message" id="code-message"></div>
+    <div class="code-modal-btns">
+      <button class="code-modal-btn primary" id="btn-validate" onclick="validateCode()">Valider</button>
+      <button class="code-modal-btn secondary" onclick="closeCodeModal()">Annuler</button>
+    </div>
   </div>
 </div>
 
@@ -1927,19 +490,49 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ================= TABS SCROLL ARROWS =================
+  // ================= FIREBASE =================
+  const firebaseConfig = {
+    apiKey: "AIzaSyDjLfEdyvYlKKJA7p-2cSkP2kNv0pjjZz0",
+    authDomain: "dashboard-roue.firebaseapp.com",
+    projectId: "dashboard-roue",
+    storageBucket: "dashboard-roue.firebasestorage.app",
+    messagingSenderId: "109735141824",
+    appId: "1:109735141824:web:2e80a4400db5af5674e825"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  let CLIENT_ID       = null;
+  let allParticipants = [];
+
+  // ================= AUTH GUARD =================
+  auth.onAuthStateChanged(user => {
+    if (!user) { window.location.href = "login.html"; return; }
+    CLIENT_ID = user.uid;
+    document.getElementById('user-email').textContent = user.email;
+    loadParticipants(user.uid);
+    loadWheelConfig();
+  });
+
+  async function handleLogout() {
+    await auth.signOut();
+    window.location.href = "login.html";
+  }
+
+  // ================= TABS =================
   function scrollTabs(direction) {
-    const nav = document.getElementById('tabs-nav');
-    nav.scrollBy({ left: direction * 120, behavior: 'smooth' });
+    document.getElementById('tabs-nav').scrollBy({ left: direction * 120, behavior: 'smooth' });
   }
 
   function updateTabsArrows() {
     const nav = document.getElementById('tabs-nav');
-    const leftArrow = document.getElementById('tabs-arrow-left');
-    const rightArrow = document.getElementById('tabs-arrow-right');
-    if (!nav || !leftArrow || !rightArrow) return;
-    leftArrow.classList.toggle('hidden', nav.scrollLeft <= 2);
-    rightArrow.classList.toggle('hidden', nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 2);
+    const l = document.getElementById('tabs-arrow-left');
+    const r = document.getElementById('tabs-arrow-right');
+    if (!nav || !l || !r) return;
+    l.classList.toggle('hidden', nav.scrollLeft <= 2);
+    r.classList.toggle('hidden', nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 2);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -1947,1600 +540,501 @@
     if (nav) {
       nav.addEventListener('scroll', updateTabsArrows);
       window.addEventListener('resize', updateTabsArrows);
-      setTimeout(updateTabsArrows, 300);
+      setTimeout(updateTabsArrows, 100);
     }
   });
 
-  // ================= CONFIG =================
-  // 👇 Modifier cette valeur pour chaque commerçant
-  const CLIENT_ID = "rylia";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDf8Oh-d4baOxu3XoPV2rnLeLJZQ5tZDYY",
-    authDomain: "rylia-fidelite-9a015.firebaseapp.com",
-    projectId: "rylia-fidelite-9a015"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db   = firebase.firestore();
-
-  // Raccourci identique à index.html
-  const profiles = db.collection("clients").doc(CLIENT_ID).collection("profiles");
-  const events   = db.collection("clients").doc(CLIENT_ID).collection("events");
-  const coupons  = db.collection("clients").doc(CLIENT_ID).collection("coupons");
-  const rewards  = db.collection("clients").doc(CLIENT_ID).collection("rewards");
-
-  // ================= MODAL CONFIRMATION MDP =================
-  let pwdResolve = null;
-
-  function requirePassword(msg) {
-    return new Promise((resolve) => {
-      pwdResolve = resolve;
-      document.getElementById("pwd-modal-msg").textContent = msg || "Entrez votre mot de passe pour confirmer.";
-      document.getElementById("pwd-modal-input").value = "";
-      document.getElementById("pwd-modal-error").style.display = "none";
-      document.getElementById("pwd-modal-overlay").classList.add("show");
-      setTimeout(() => document.getElementById("pwd-modal-input").focus(), 100);
-    });
-  }
-
-  function closePwdModal() {
-    document.getElementById("pwd-modal-overlay").classList.remove("show");
-    if (pwdResolve) { pwdResolve(false); pwdResolve = null; }
-  }
-
-  async function confirmPwdModal() {
-    const pwd = document.getElementById("pwd-modal-input").value;
-    const errEl = document.getElementById("pwd-modal-error");
-    const btn = document.getElementById("pwd-modal-confirm");
-    if (!pwd) { errEl.textContent = "Veuillez entrer votre mot de passe."; errEl.style.display = "block"; return; }
-    btn.disabled = true; btn.textContent = "Vérification…";
-    try {
-      const user = auth.currentUser;
-      const credential = firebase.auth.EmailAuthProvider.credential(user.email, pwd);
-      await user.reauthenticateWithCredential(credential);
-      document.getElementById("pwd-modal-overlay").classList.remove("show");
-      if (pwdResolve) { pwdResolve(true); pwdResolve = null; }
-    } catch (e) {
-      errEl.textContent = "Mot de passe incorrect.";
-      errEl.style.display = "block";
-    } finally {
-      btn.disabled = false; btn.textContent = "Confirmer";
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    if (tabName === 'gains') {
+      document.getElementById('tab-btn-gains').classList.add('active');
+      document.getElementById('tab-gains').classList.add('active');
+      document.getElementById('page-subtitle').textContent = 'Gestion des gains de vos participants';
+    } else if (tabName === 'config') {
+      document.getElementById('tab-btn-config').classList.add('active');
+      document.getElementById('tab-config').classList.add('active');
+      document.getElementById('page-subtitle').textContent = 'Configuration de la roue de la fortune';
     }
   }
 
-  // Entrée pour confirmer dans le modal
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("pwd-modal-input").addEventListener("keypress", (e) => {
-      if (e.key === "Enter") confirmPwdModal();
-    });
-  });
+  // ================= GESTION DES GAINS =================
 
-  // ================= PALIERS =================
-  // Valeurs par défaut — seront écrasées par Firestore
-  let REWARD_TIERS = [
-    { points: 40,  title: "Gain 1", desc: "ex: Boisson offerte", imageUrl: "" },
-    { points: 80,  title: "Gain 2", desc: "ex: Dessert offert", imageUrl: ""  },
-    { points: 150, title: "Gain 3", desc: "ex: Plat au choix", imageUrl: ""   },
-    { points: 200, title: "Gain 4", desc: "ex: Menu complet", imageUrl: ""    },
-    { points: 260, title: "Gain 5", desc: "ex: Repas pour 2", imageUrl: ""    }
-  ];
-
-  let MAX_POINTS = 260;
-
-  // ================= STATE =================
-  let allMembers = [];
-  let currentMember = null; // { id, ...data }
-
-    // ================= HTML ESCAPE (anti-XSS) =================
-  function esc(s) {
-    return String(s ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
-
-  // ================= AUTH GUARD =================
-  auth.onAuthStateChanged(async user => {
-    if (!user) { window.location.href = "index.html"; return; }
-
-    const doc = await profiles.doc(user.uid).get();
-    if (!doc.exists || doc.data().role !== "admin") {
-      auth.signOut();
-      window.location.href = "index.html";
-      return;
-    }
-
-    document.getElementById("user-email").textContent = user.email;
-    document.getElementById("page-subtitle").textContent = `Programme de fidélité — ${CLIENT_ID}`;
-    await loadRewardsFromFirestore();
-    loadMembers();
-    refreshHistoryBadge();
-  });
-
-  // ================= CHARGEMENT TEMPS RÉEL =================
-  function loadMembers() {
-    profiles
-      .where("role", "==", "membre")
-      .orderBy("points", "desc")
+  function loadParticipants(uid) {
+    db.collection("clients").doc(uid).collection("participants")
+      .orderBy("date", "desc")
       .onSnapshot(snapshot => {
-        allMembers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        updateKPIs();
+        allParticipants = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        buildGainFilter();
         applyFilters();
+        updateKPIs();
       }, err => {
         console.error("Firestore :", err);
         showEmpty("Erreur de chargement des données.");
       });
   }
 
-  // ================= KPIs =================
-  function updateKPIs() {
-    const total     = allMembers.length;
-    const totalPts  = allMembers.reduce((sum, m) => sum + (m.points || 0), 0);
-    const avgPts    = total > 0 ? Math.round(totalPts / total) : 0;
-    const top       = allMembers[0]; // déjà trié par points desc
-
-    document.getElementById("kpi-total").textContent  = total;
-    document.getElementById("kpi-points").textContent = totalPts.toLocaleString("fr-FR");
-    document.getElementById("kpi-tiers").textContent  = avgPts;
-    document.getElementById("kpi-top").textContent    = top
-      ? `${top.first_name} (${top.points} pts)`
-      : "—";
+  function buildGainFilter() {
+    const select  = document.getElementById("filter-gain");
+    const current = select.value;
+    const gains   = [...new Set(allParticipants.map(p => p.gain).filter(Boolean))].sort();
+    select.innerHTML = '<option value="">Tous les gains</option>';
+    gains.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g; opt.textContent = g;
+      if (g === current) opt.selected = true;
+      select.appendChild(opt);
+    });
   }
 
-  // ================= FILTRAGE =================
   function applyFilters() {
-    const search    = document.getElementById("search-input").value.toLowerCase().trim();
-    const tierMin   = parseInt(document.getElementById("filter-tier").value) || null;
+    const search = document.getElementById("search-input").value.toLowerCase().trim();
+    const gain   = document.getElementById("filter-gain").value;
+    const statut = document.getElementById("filter-statut").value;
 
-    const filtered = allMembers.filter(m => {
+    const filtered = allParticipants.filter(p => {
       const matchSearch = !search
-        || (m.first_name  || "").toLowerCase().includes(search)
-        || (m.email       || "").toLowerCase().includes(search)
-        || (m.short_code  || "").toLowerCase().includes(search);
-      const pts = m.points || 0;
-      const matchTier = tierMin === null
-        ? true
-        : tierMin === 0
-          ? pts < 40
-          : pts >= tierMin;
-      return matchSearch && matchTier;
+        || (p.nom   || "").toLowerCase().includes(search)
+        || (p.email || "").toLowerCase().includes(search);
+      const matchGain   = !gain || p.gain === gain;
+      const expire      = isExpired(p.date_expiration);
+      const matchStatut = !statut
+        || (statut === "remis"     &&  p.remis)
+        || (statut === "non-remis" && !p.remis)
+        || (statut === "expire"    &&  expire && !p.remis);
+      return matchSearch && matchGain && matchStatut;
     });
-
     renderTable(filtered);
   }
 
-  // ================= RENDU TABLEAU =================
   function renderTable(rows) {
     const tbody   = document.getElementById("table-body");
     const countEl = document.getElementById("result-count");
 
     if (rows.length === 0) {
-      showEmpty("Aucun membre trouvé.");
+      showEmpty("Aucun résultat pour ces filtres.");
       countEl.style.display = "none";
       return;
     }
 
-    tbody.innerHTML = rows.map((m, i) => {
-      const pts      = m.points || 0;
-      const progress = Math.min(Math.round((pts / MAX_POINTS) * 100), 100);
-      const nextTier = REWARD_TIERS.find(t => pts < t.points);
-      const tierLabel = nextTier
-        ? `${pts} / ${nextTier.points} pts`
-        : `${pts} pts ✓`;
+    tbody.innerHTML = rows.map(p => {
+      const expired   = isExpired(p.date_expiration);
+      const available = isAvailable(p.date);
+      const remaining = available ? null : timeUntilAvailable(p.date);
+      const rowClass  = p.remis ? "row-remis" : "";
+      const expBadge = p.date_expiration
+        ? '<span class="badge-exp ' + (expired ? 'expired' : 'valid') + '">' + (expired ? '⚠ ' : '') + escHtml(p.date_expiration) + '</span>'
+        : '<span style="color:var(--gray)">—</span>';
 
-      // Rang (position dans le classement global)
-      const globalRank = allMembers.findIndex(x => x.id === m.id) + 1;
-      let rankClass = "";
-      if      (globalRank === 1) rankClass = "gold";
-      else if (globalRank === 2) rankClass = "silver";
-      else if (globalRank === 3) rankClass = "bronze";
+      const remisCell = p.remis
+        ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" checked onchange="toggleRemis(\'' + p.id + '\', this)"><span class="remis-time">' + escHtml(p.remis_heure || "") + '</span></div>'
+        : expired
+          ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" disabled><span class="expired-label">Expiré</span></div>'
+          : !available
+            ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" disabled title="Disponible dans ' + remaining + '"><span class="pending-label">Dans ' + remaining + '</span></div>'
+            : '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" onchange="toggleRemis(\'' + p.id + '\', this)"></div>';
 
-      const lastActivity = m.last_transaction
-        ? formatDate(m.last_transaction)
-        : (m.created_at ? formatDate(m.created_at) : "—");
-
-      return `
-        <tr onclick="openModal('${m.id}')">
-          <td><span class="rank-badge ${rankClass}">${globalRank}</span></td>
-          <td class="cell-person">
-            <strong>${escHtml(m.first_name || "—")}</strong>
-            <span>${escHtml(m.email || "—")}</span>
-          </td>
-          <td><span class="code">${escHtml(m.short_code || "—")}</span></td>
-          <td>
-            <span class="badge-points ${pts === 0 ? 'zero' : ''}">
-              ${pts} pts
-            </span>
-          </td>
-          <td>
-            <div class="tier-bar">
-              <div class="tier-track">
-                <div class="tier-fill" style="width: ${progress}%"></div>
-              </div>
-              <span class="tier-label">${tierLabel}</span>
-            </div>
-          </td>
-          <td class="cell-date">${lastActivity}</td>
-          <td>
-            <button class="btn-manage" onclick="event.stopPropagation(); openModal('${m.id}')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-              Gérer
-            </button>
-          </td>
-        </tr>`;
+      return '<tr class="' + rowClass + '">'
+        + '<td class="cell-person"><strong>' + escHtml(p.nom || "—") + '</strong><span>' + escHtml(p.email || "—") + '</span></td>'
+        + '<td><span class="badge-gain">' + escHtml(p.gain || "—") + '</span></td>'
+        + '<td><span class="code">' + escHtml(p.code || "—") + '</span></td>'
+        + '<td>' + expBadge + '</td>'
+        + '<td class="cell-date">' + formatDate(p.date) + '</td>'
+        + '<td class="cell-remis">' + remisCell + '</td>'
+        + '<td class="menu-cell"><button class="menu-btn" onclick="toggleMenu(event, \'' + p.id + '\', \'' + escHtml(p.nom || "") + '\', \'' + escHtml(p.email || "") + '\')">⋯</button></td>'
+        + '</tr>';
     }).join("");
 
     countEl.style.display = "block";
-    countEl.textContent = `${rows.length} membre${rows.length > 1 ? "s" : ""}`;
+    countEl.textContent   = rows.length + " résultat" + (rows.length > 1 ? "s" : "");
   }
 
   function showEmpty(msg) {
-    document.getElementById("table-body").innerHTML = `
-      <tr><td colspan="7">
-        <div class="table-state"><p>${msg}</p></div>
-      </td></tr>`;
+    document.getElementById("table-body").innerHTML =
+      '<tr><td colspan="7"><div class="table-state"><p>' + msg + '</p></div></td></tr>';
   }
 
-  // ================= MODALE CLIENT =================
-  function openModal(memberId) {
-    const member = allMembers.find(m => m.id === memberId);
-    if (!member) return;
-
-    currentMember = member;
-
-    document.getElementById("modal-name").textContent   = member.first_name || "—";
-    document.getElementById("modal-email").textContent  = member.email || "—";
-    document.getElementById("modal-code").textContent   = member.short_code || "—";
-    document.getElementById("modal-amount").value       = "";
-    hideFeedback();
-    refreshModalPoints(member.points || 0);
-
-    document.getElementById("client-modal").classList.add("show");
-    loadModalCoupons(member.id);
+  function updateKPIs() {
+    document.getElementById("kpi-total").textContent   = allParticipants.length;
+    document.getElementById("kpi-remis").textContent   = allParticipants.filter(p => p.remis).length;
+    document.getElementById("kpi-expires").textContent = allParticipants.filter(p => isExpired(p.date_expiration) && !p.remis).length;
   }
 
-  function refreshModalPoints(pts) {
-    document.getElementById("modal-points").innerHTML = `${pts} <span>pts</span>`;
-    renderModalRewards(pts);
-  }
-
-  async function renderModalRewards(pts) {
-    const container = document.getElementById("modal-rewards");
-    
-    // Récupérer les paliers standards
-    let available = REWARD_TIERS.filter(t => t.points <= pts);
-
-    // Ajouter la récompense spéciale si événement actif
-    const activeEvent = await getActiveEvent();
-    if (activeEvent && activeEvent.options && activeEvent.options.specialReward) {
-      const specialReward = {
-        points: activeEvent.options.rewardPoints,
-        title: `🎁 ${activeEvent.options.rewardName}`,
-        desc: `Récompense spéciale - ${activeEvent.title}`,
-        isSpecial: true
-      };
-      
-      // Ajouter seulement si le client a assez de points
-      if (pts >= specialReward.points) {
-        available.push(specialReward);
-        // Trier par points
-        available.sort((a, b) => a.points - b.points);
+  async function toggleRemis(docId, checkbox) {
+    // Sécurité : on empêche de cocher "remis" pendant les 24h post-tirage
+    if (checkbox.checked) {
+      const participant = allParticipants.find(p => p.id === docId);
+      if (participant && !isAvailable(participant.date)) {
+        checkbox.checked = false;
+        const t = timeUntilAvailable(participant.date);
+        showToast("⏳ Ce gain ne sera disponible que dans " + (t || "moins d'une minute") + ".");
+        return;
       }
     }
 
-    if (available.length === 0) {
-      container.innerHTML = `<p class="no-rewards">Pas encore assez de points pour une récompense.</p>`;
-      return;
-    }
+    checkbox.disabled = true;
+    const wrap    = checkbox.closest(".remis-wrap");
+    const isRemis = checkbox.checked;
+    const now     = new Date();
+    const heure   = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const dateStr = now.toLocaleDateString("fr-FR");
 
-    container.innerHTML = available.map(tier => `
-      <button class="btn-reward ${tier.isSpecial ? 'special-reward' : ''}" onclick="deductReward(${tier.points}, '${tier.title.replace(/🎁 /, '')}')">
-        <span>
-          <strong>${tier.title}</strong>
-          <span style="color: var(--gray); font-size: 12px; margin-left: 6px;">${tier.desc}</span>
-        </span>
-        <span class="reward-pts-badge">−${tier.points} pts</span>
-      </button>
-    `).join("");
-  }
-
-  function closeModal() {
-    document.getElementById("client-modal").classList.remove("show");
-    currentMember = null;
-    document.getElementById("modal-amount").value = "";
-    hideFeedback();
-  }
-
-  function handleModalBackdropClick(e) {
-    if (e.target === document.getElementById("client-modal")) closeModal();
-  }
-
-  // ================= VÉRIFIER ÉVÉNEMENT ACTIF =================
-  let activeEventCache = null;
-  let lastEventCheck = 0;
-
-  async function getActiveEvent() {
-    // Cache de 30 secondes pour éviter trop de requêtes
-    const now = Date.now();
-    if (activeEventCache && (now - lastEventCheck) < 30000) {
-      return activeEventCache;
-    }
+    const dot = document.createElement("span");
+    dot.className = "saving-dot";
+    wrap.appendChild(dot);
 
     try {
-      const currentDate = new Date();
-      const snapshot = await events.where("active", "==", true).get();
+      await db.collection("clients").doc(CLIENT_ID)
+        .collection("participants").doc(docId)
+        .update(isRemis
+          ? { remis: true, remis_heure: dateStr + " à " + heure, remis_timestamp: firebase.firestore.FieldValue.serverTimestamp() }
+          : { remis: false, remis_heure: firebase.firestore.FieldValue.delete(), remis_timestamp: firebase.firestore.FieldValue.delete() }
+        );
+    } catch (err) {
+      console.error("Erreur mise à jour :", err);
+      checkbox.checked  = !isRemis;
+      checkbox.disabled = false;
+      dot.remove();
+      alert("Erreur lors de la mise à jour. Réessayez.");
+    }
+  }
 
-      if (snapshot.empty) {
-        activeEventCache = null;
-        lastEventCheck = now;
-        return null;
-      }
+  // ---- Menu ⋯ ----
+  let pendingDeleteId = null;
 
-      // Trouver l'événement actif dont la deadline n'est pas dépassée
-      let activeEvent = null;
-      snapshot.forEach(doc => {
-        const event = doc.data();
-        const deadline = event.deadline.toDate();
-        const startDate = event.startDate ? event.startDate.toDate() : null;
-        // L'événement est vraiment actif seulement après sa date de début
-        const hasStarted = !startDate || startDate <= currentDate;
-        if (deadline > currentDate && hasStarted) {
-          activeEvent = { id: doc.id, ...event };
+  function toggleMenu(event, docId, nom, email) {
+    event.stopPropagation();
+    const cell = event.currentTarget.closest("td");
+    if (cell.querySelector(".action-btns")) {
+      cell.innerHTML = '<button class="menu-btn" onclick="toggleMenu(event, \'' + docId + '\', \'' + nom + '\', \'' + email + '\')">⋯</button>';
+      return;
+    }
+    cell.innerHTML = '<div class="action-btns">'
+      + '<button class="action-btn" data-tip="Copier l\'e-mail" onclick="copyEmail(\'' + email + '\')">'
+      +   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
+      + '</button>'
+      + '<button class="action-btn danger" data-tip="Supprimer" onclick="openDeleteModal(\'' + docId + '\', \'' + nom + '\', \'' + email + '\')">'
+      +   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+      + '</button>'
+      + '<button class="action-btn" data-tip="Fermer" onclick="toggleMenu(event, \'' + docId + '\', \'' + nom + '\', \'' + email + '\')">'
+      +   '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+      + '</button>'
+      + '</div>';
+  }
+
+  function copyEmail(email) {
+    navigator.clipboard.writeText(email).then(function() { showToast("E-mail copié !"); });
+  }
+
+  function openDeleteModal(docId, nom, email) {
+    pendingDeleteId = docId;
+    document.getElementById("delete-modal-sub").textContent = (nom || "Ce participant") + " (" + email + ") sera supprimé définitivement.";
+    document.getElementById("delete-modal").classList.add("show");
+  }
+
+  function closeDeleteModal() {
+    document.getElementById("delete-modal").classList.remove("show");
+    pendingDeleteId = null;
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    var docId = pendingDeleteId;
+    closeDeleteModal();
+    try {
+      await db.collection("clients").doc(CLIENT_ID).collection("participants").doc(docId).delete();
+      showToast("Participant supprimé.");
+    } catch (err) {
+      console.error("Erreur suppression :", err);
+      showToast("Erreur lors de la suppression.");
+    }
+  }
+
+  // ---- Suppression tout l'historique ----
+  function openDeleteAllModal() {
+    if (allParticipants.length === 0) { showToast("Aucun participant à supprimer."); return; }
+    document.getElementById("delete-all-modal-sub").textContent =
+      allParticipants.length + " participant" + (allParticipants.length > 1 ? "s" : "") + " et leurs gains seront supprimés définitivement. Cette action est irréversible.";
+    document.getElementById("delete-all-modal").classList.add("show");
+  }
+
+  function closeDeleteAllModal() {
+    document.getElementById("delete-all-modal").classList.remove("show");
+  }
+
+  async function confirmDeleteAll() {
+    var btn = document.getElementById("btn-delete-all-confirm");
+    btn.disabled = true;
+    btn.textContent = "Suppression…";
+
+    try {
+      var batch = db.batch();
+      var count = 0;
+      var snap = await db.collection("clients").doc(CLIENT_ID).collection("participants").get();
+
+      for (var i = 0; i < snap.docs.length; i++) {
+        batch.delete(snap.docs[i].ref);
+        count++;
+        // Firestore limite les batchs à 500 opérations
+        if (count % 500 === 0) {
+          await batch.commit();
+          batch = db.batch();
         }
-      });
-
-      activeEventCache = activeEvent;
-      lastEventCheck = now;
-      return activeEvent;
-
-    } catch (err) {
-      console.error("Erreur vérification événement:", err);
-      return null;
-    }
-  }
-
-  // ================= AJOUTER DES POINTS =================
-  async function addPoints() {
-    if (!currentMember) return;
-    const amount = parseFloat(document.getElementById("modal-amount").value);
-
-    if (!amount || amount <= 0) {
-      showFeedback("Veuillez saisir un montant valide.", "error");
-      return;
-    }
-
-    const btn = document.getElementById("btn-add");
-    btn.disabled = true;
-
-    try {
-      // Vérifier s'il y a un événement actif avec Points x2
-      const activeEvent = await getActiveEvent();
-      const multiplier = (activeEvent && activeEvent.options && activeEvent.options.doublePoints) ? 4 : 2;
-      
-      const pointsToAdd = Math.round(amount * multiplier);
-      let libelle = `Commande de ${amount.toFixed(2).replace(".", ",")}€`;
-      
-      // Ajouter une indication si Points x2 actif
-      if (multiplier === 4) {
-        libelle += ` (x2 - ${activeEvent.title})`;
       }
+      if (count % 500 !== 0) await batch.commit();
 
-      await profiles.doc(currentMember.id).update({
-        points: firebase.firestore.FieldValue.increment(pointsToAdd),
-        last_transaction: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      await profiles.doc(currentMember.id).collection("transactions").add({
-        amount_euros: amount,
-        points_added: pointsToAdd,
-        description: libelle,
-        date: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Mettre à jour l'état local + UI
-      currentMember.points = (currentMember.points || 0) + pointsToAdd;
-      refreshModalPoints(currentMember.points);
-      document.getElementById("modal-amount").value = "";
-      
-      const successMsg = multiplier === 4 
-        ? `✓ +${pointsToAdd} points ajoutés (🎯 x2 actif !)` 
-        : `✓ +${pointsToAdd} points ajoutés`;
-      
-      showFeedback(successMsg, "success");
-      showToast(`+${pointsToAdd} pts — ${currentMember.first_name}`);
-
+      closeDeleteAllModal();
+      showToast("✅ Historique supprimé (" + count + " participant" + (count > 1 ? "s" : "") + ").");
     } catch (err) {
-      console.error(err);
-      showFeedback("Erreur lors de l'ajout des points.", "error");
+      console.error("Erreur suppression historique :", err);
+      showToast("❌ Erreur lors de la suppression.");
     } finally {
       btn.disabled = false;
+      btn.textContent = "Tout supprimer";
     }
   }
 
-  // ================= DÉDUIRE UNE RÉCOMPENSE =================
-  async function deductReward(pointsToDeduct, rewardTitle) {
-    if (!currentMember) return;
+  // ---- Validation code ----
+  function openCodeModal() {
+    document.getElementById("code-modal").classList.add("show");
+    document.getElementById("code-input").value = "";
+    document.getElementById("code-message").classList.remove("show");
+    setTimeout(function() { document.getElementById("code-input").focus(); }, 100);
+  }
 
-    if (!confirm(`Valider l'utilisation de "${rewardTitle}" pour ${currentMember.first_name} (−${pointsToDeduct} pts) ?`)) return;
+  function closeCodeModal() {
+    document.getElementById("code-modal").classList.remove("show");
+    document.getElementById("code-input").value = "";
+    document.getElementById("code-message").classList.remove("show");
+  }
 
-    const pts = currentMember.points || 0;
-    if (pts < pointsToDeduct) {
-      showFeedback("Le client n'a pas assez de points.", "error");
-      return;
-    }
+  function showCodeMessage(message, type) {
+    var msgEl = document.getElementById("code-message");
+    msgEl.textContent = message;
+    msgEl.className = "code-message show " + type;
+  }
+
+  async function validateCode() {
+    var codeInput   = document.getElementById("code-input").value.trim().toUpperCase();
+    var btnValidate = document.getElementById("btn-validate");
+    if (!codeInput) { showCodeMessage("Veuillez entrer un code", "error"); return; }
+    btnValidate.disabled = true;
 
     try {
-      const libelle = `Consommation : ${rewardTitle}`;
-
-      await profiles.doc(currentMember.id).update({
-        points: firebase.firestore.FieldValue.increment(-pointsToDeduct),
-        last_transaction: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      await profiles.doc(currentMember.id).collection("transactions").add({
-        amount_euros: 0,
-        points_added: -pointsToDeduct,
-        description: libelle,
-        date: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      currentMember.points = pts - pointsToDeduct;
-      refreshModalPoints(currentMember.points);
-      showFeedback(`✓ ${rewardTitle} utilisée (−${pointsToDeduct} pts)`, "success");
-      showToast(`${rewardTitle} utilisée — ${currentMember.first_name}`);
-
-    } catch (err) {
-      console.error(err);
-      showFeedback("Erreur lors de l'utilisation de la récompense.", "error");
-    }
-  }
-
-  // ================= FEEDBACK MODAL =================
-  function showFeedback(msg, type) {
-    const el = document.getElementById("modal-feedback");
-    el.textContent = msg;
-    el.className = `modal-feedback show ${type}`;
-  }
-
-  function hideFeedback() {
-    document.getElementById("modal-feedback").className = "modal-feedback";
-  }
-
-  // ================= TOAST =================
-  let toastTimer;
-  function showToast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 2500);
-  }
-
-  // ================= LOGOUT =================
-  async function handleLogout() {
-    await auth.signOut();
-    window.location.href = "index.html";
-  }
-
-  // ================= ONGLETS =================
-  function switchTab(tabName) {
-    // Retirer active de tous les boutons et contenus
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-    if (tabName === 'members') {
-      document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
-      document.getElementById('tab-members').classList.add('active');
-      document.getElementById('page-subtitle').textContent = 'Gestion des membres';
-    } else if (tabName === 'events') {
-      document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
-      document.getElementById('tab-events').classList.add('active');
-      document.getElementById('page-subtitle').textContent = 'Gestion des événements';
-      loadActiveEventsList();
-    } else if (tabName === 'coupons') {
-      document.getElementById('tab-btn-coupons').classList.add('active');
-      document.getElementById('tab-coupons').classList.add('active');
-      document.getElementById('page-subtitle').textContent = 'Gestion des coupons';
-      populateCouponMemberSelect();
-    } else if (tabName === 'rewards') {
-      document.getElementById('tab-btn-rewards').classList.add('active');
-      document.getElementById('tab-rewards').classList.add('active');
-      document.getElementById('page-subtitle').textContent = 'Gestion des récompenses';
-      loadRewardsList();
-    }
-  }
-
-  // ================= CRÉER UN ÉVÉNEMENT =================
-  async function createNewEvent() {
-    const confirmed = await requirePassword("Confirmez votre mot de passe pour créer un événement.");
-    if (!confirmed) return;
-
-    const title = document.getElementById("event-title").value.trim();
-    const description = document.getElementById("event-description").innerHTML.trim();
-    const descClean = description === '<br>' || description === '<div><br></div>' ? '' : description;
-    const deadline = document.getElementById("event-deadline").value;
-    const startDateVal = document.getElementById("event-startdate").value;
-
-    if (!title || !deadline || !startDateVal) {
-      alert("⚠️ Veuillez remplir le nom, la date de début et la date de fin.");
-      return;
-    }
-
-    const now = new Date();
-    const deadlineDate = new Date(deadline);
-    const startDate = new Date(startDateVal);
-
-    if (startDate >= deadlineDate) {
-      alert("⚠️ La date de début doit être antérieure à la date de fin.");
-      return;
-    }
-    if (deadlineDate <= now) {
-      alert("⚠️ La date de fin doit être dans le futur.");
-      return;
-    }
-
-    // Récupérer les options
-    const options = {
-      doublePoints: document.getElementById("option-double-points").checked,
-      bonusExisting: false,
-      bonusAmount: 0,
-      specialReward: document.getElementById("option-special-reward").checked,
-      rewardName: document.getElementById("option-special-reward").checked 
-        ? document.getElementById("reward-name").value.trim() 
-        : "",
-      rewardPoints: document.getElementById("option-special-reward").checked 
-        ? parseInt(document.getElementById("reward-points").value) || 0 
-        : 0
-    };
-
-    // Validation des options
-    if (options.specialReward && (!options.rewardName || options.rewardPoints <= 0)) {
-      alert("⚠️ Veuillez remplir les détails de la récompense spéciale.");
-      return;
-    }
-
-    const btn = document.querySelector('.btn-create-event');
-    btn.disabled = true;
-    btn.textContent = "⏳ Création en cours...";
-
-    try {
-      // Créer l'événement dans Firestore avec les options
-      await events.add({
-        title,
-        description: descClean,
-        startDate: startDate,
-        deadline: deadlineDate,
-        imageUrl: "",
-        active: true,
-        priority: 0,
-        options: options,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Réinitialiser le formulaire
-      document.getElementById("event-title").value = "";
-      document.getElementById("event-description").innerHTML = "";
-      document.getElementById("event-startdate").value = "";
-      document.getElementById("event-deadline").value = "";
-      document.getElementById("option-double-points").checked = false;
-      document.getElementById("option-special-reward").checked = false;
-      document.getElementById("reward-name").value = "";
-      document.getElementById("reward-points").value = "";
-      document.getElementById("reward-details-container").style.display = "none";
-
-      showToast(`✅ Événement "${title}" créé !`);
-      loadActiveEventsList();
-      refreshHistoryBadge();
-
-    } catch (err) {
-      console.error(err);
-      alert("❌ Erreur lors de la création de l'événement : " + err.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "🚀 Publier l'événement";
-    }
-  }
-
-  // ================= COLLAPSIBLE TOGGLE =================
-  function toggleCollapsible(id, btn) {
-    const content = document.getElementById('collapsible-' + id);
-    const isOpen = content.classList.toggle('open');
-    btn.classList.toggle('open', isOpen);
-    if (isOpen && !content.dataset.loaded) {
-      content.dataset.loaded = '1';
-      if (id === 'events-history') loadEventHistory();
-      if (id === 'coupons-active') loadActiveCouponsList();
-      if (id === 'coupons-sent') loadCouponSentHistory();
-      if (id === 'coupons-consumed') loadCouponConsumedHistory();
-    }
-  }
-
-  // ================= GESTION ÉVÉNEMENTS ACTIFS =================
-  async function loadActiveEventsList() {
-    const container = document.getElementById("active-events-list");
-    container.innerHTML = '<div class="events-empty"><p>Chargement…</p></div>';
-    try {
-      const now = new Date();
-      const snapshot = await events.get();
-      const activeEvts = [];
-      snapshot.forEach(doc => {
-        const e = doc.data();
-        const deadline = e.deadline.toDate();
-        if (deadline > now) activeEvts.push({ id: doc.id, ...e, deadlineDate: deadline });
-      });
-      activeEvts.sort((a, b) => {
-        const pa = a.priority || 0, pb = b.priority || 0;
-        if (pb !== pa) return pb - pa;
-        const aStart = a.startDate ? a.startDate.toDate() : a.deadlineDate;
-        const bStart = b.startDate ? b.startDate.toDate() : b.deadlineDate;
-        return aStart - bStart;
-      });
-      if (activeEvts.length === 0) {
-        container.innerHTML = '<div class="events-empty"><p>Aucun événement en cours</p></div>';
-        return;
-      }
-      container.innerHTML = '';
-      activeEvts.forEach((e, idx) => {
-        const isPrimary = idx === 0;
-        const startDate = e.startDate ? e.startDate.toDate() : null;
-        const hasStarted = !startDate || startDate <= now;
-        const startStr = startDate ? startDate.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-        const endStr = e.deadlineDate.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-        let badges = '';
-        if (isPrimary) badges += '<span class="ac-badge primary">⭐ Affiché en 1er</span>';
-        badges += hasStarted ? '<span class="ac-badge started">▶ Commencé</span>' : '<span class="ac-badge waiting">⏳ Pas encore commencé</span>';
-        if (e.options && e.options.doublePoints) badges += '<span class="ac-badge double">🎯 x2</span>';
-        if (e.options && e.options.specialReward) badges += `<span class="ac-badge reward">🎁 ${escHtml(e.options.rewardName || '')}</span>`;
-        const card = document.createElement('div');
-        card.className = `active-card${isPrimary ? ' is-primary' : ''}`;
-        card.innerHTML = `
-          <div class="ac-header"><div>
-            <div class="ac-title">${escHtml(e.title)}</div>
-            <div class="ac-badges">${badges}</div>
-          </div></div>
-          ${e.description ? `<div class="ac-meta">${sanitizeDesc(e.description)}</div>` : ''}
-          <div class="ac-meta">🟢 Début : ${startStr}<br>🔴 Fin : ${endStr}</div>
-          <div class="ac-actions">
-            ${!isPrimary ? `<button class="ac-btn primary-btn" onclick="setEventPrimary('${e.id}')">⭐ Mettre en 1er</button>` : ''}
-            <button class="ac-btn delete-btn" onclick="deleteActiveEvent('${e.id}', '${escHtml(e.title)}')">🗑️ Supprimer</button>
-          </div>`;
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error("Erreur chargement événements actifs:", err);
-      container.innerHTML = '<div class="events-empty"><p>❌ Erreur de chargement</p></div>';
-    }
-  }
-
-  async function setEventPrimary(eventId) {
-    try {
-      const snapshot = await events.get();
-      const batch = db.batch();
-      snapshot.forEach(doc => { batch.update(events.doc(doc.id), { priority: 0 }); });
-      batch.update(events.doc(eventId), { priority: 10 });
-      await batch.commit();
-      showToast("⭐ Événement mis en priorité !");
-      loadActiveEventsList();
-    } catch (err) { console.error(err); alert("❌ Erreur : " + err.message); }
-  }
-
-  async function deleteActiveEvent(eventId, title) {
-    if (!confirm(`Supprimer l'événement "${title}" ?\n\nCette action est irréversible.`)) return;
-    const confirmed = await requirePassword("Confirmez votre mot de passe pour supprimer cet événement.");
-    if (!confirmed) return;
-    try {
-      await events.doc(eventId).delete();
-      showToast("✅ Événement supprimé");
-      loadActiveEventsList();
-    } catch (err) { console.error(err); alert("❌ Erreur : " + err.message); }
-  }
-
-  // ================= GESTION COUPONS ACTIFS =================
-  async function loadActiveCouponsList() {
-    const container = document.getElementById("active-coupons-list");
-    container.innerHTML = '<div class="events-empty"><p>Chargement…</p></div>';
-    try {
-      const now = new Date();
-      const snapshot = await coupons.get();
-      const activeCpns = [];
-      snapshot.forEach(doc => {
-        const c = doc.data();
-        const expired = c.expiresAt && c.expiresAt.toDate() < now;
-        if (c.active && !expired) activeCpns.push({ id: doc.id, ...c });
-      });
-      activeCpns.sort((a, b) => {
-        const da = a.createdAt ? a.createdAt.toDate() : new Date(0);
-        const db2 = b.createdAt ? b.createdAt.toDate() : new Date(0);
-        return db2 - da;
-      });
-      if (activeCpns.length === 0) {
-        container.innerHTML = '<div class="events-empty"><p>Aucun coupon actif</p></div>';
-        return;
-      }
-      container.innerHTML = '';
-      activeCpns.forEach(c => {
-        const usedCount = c.usedBy ? c.usedBy.length : 0;
-        const totalTarget = c.assignedTo === "all" ? allMembers.length : 1;
-        const expiryStr = c.expiresAt
-          ? c.expiresAt.toDate().toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
-          : 'Sans expiration';
-        const card = document.createElement('div');
-        card.className = 'active-card';
-        card.innerHTML = `
-          <div class="ac-header"><div>
-            <div class="ac-title">🎟️ ${escHtml(c.title)}</div>
-            <div class="ac-badges">
-              <span class="ac-badge ${c.assignedTo === 'all' ? 'all' : 'personal'}">
-                ${c.assignedTo === 'all' ? '👥 Tous' : '👤 ' + escHtml(c.assignedToName || '—')}
-              </span>
-            </div>
-          </div></div>
-          ${c.description ? `<div class="ac-meta">${escHtml(c.description).replace(/\n/g, '<br>')}</div>` : ''}
-          <div class="ac-meta">⏰ ${expiryStr} · ✅ Utilisé ${usedCount}/${totalTarget}</div>
-          <div class="ac-actions">
-            <button class="ac-btn delete-btn" onclick="deleteActiveCoupon('${c.id}', '${escHtml(c.title)}')">🗑️ Supprimer</button>
-          </div>`;
-        container.appendChild(card);
-      });
-    } catch (err) {
-      console.error("Erreur chargement coupons actifs:", err);
-      container.innerHTML = '<div class="events-empty"><p>❌ Erreur de chargement</p></div>';
-    }
-  }
-
-  async function deleteActiveCoupon(couponId, title) {
-    if (!confirm(`Supprimer le coupon "${title}" ?\n\nCette action est irréversible.`)) return;
-    const confirmed = await requirePassword("Confirmez votre mot de passe pour supprimer ce coupon.");
-    if (!confirmed) return;
-    try {
-      await coupons.doc(couponId).delete();
-      showToast("✅ Coupon supprimé");
-      loadActiveCouponsList();
-    } catch (err) { console.error(err); alert("❌ Erreur : " + err.message); }
-  }
-
-  // ================= HISTORIQUE COUPONS =================
-  async function loadCouponSentHistory() {
-    const tbody = document.getElementById("coupon-sent-body");
-    tbody.innerHTML = '<tr><td colspan="4"><div class="table-state"><div class="loading-spinner"></div><p>Chargement…</p></div></td></tr>';
-    try {
-      const snapshot = await coupons.get();
-      if (snapshot.empty) {
-        tbody.innerHTML = '<tr><td colspan="4"><div class="table-state"><p>Aucun coupon envoyé</p></div></td></tr>';
-        return;
-      }
-      const allCpns = [];
-      snapshot.forEach(doc => { allCpns.push({ id: doc.id, ...doc.data() }); });
-      allCpns.sort((a, b) => {
-        const da = a.createdAt ? a.createdAt.toDate() : new Date(0);
-        const db2 = b.createdAt ? b.createdAt.toDate() : new Date(0);
-        return db2 - da;
-      });
-      const now = new Date();
-      tbody.innerHTML = allCpns.map(c => {
-        const expired = c.expiresAt && c.expiresAt.toDate() < now;
-        const expiryStr = c.expiresAt ? c.expiresAt.toDate().toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : 'Sans expiration';
-        const createdStr = c.createdAt ? c.createdAt.toDate().toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
-        return `<tr>
-          <td><div class="cell-event-title">🎟️ ${escHtml(c.title)}</div>${c.description ? `<div class="cell-event-desc">${escHtml(c.description).replace(/\n/g, '<br>')}</div>` : ''}</td>
-          <td style="font-size:12px;">${c.assignedTo === 'all' ? '👥 Tous les membres' : '👤 ' + escHtml(c.assignedToName || '—')}</td>
-          <td class="cell-date">${expired ? '<span style="color:var(--danger);">Expiré</span>' : expiryStr}</td>
-          <td class="cell-date">${createdStr}</td>
-        </tr>`;
-      }).join('');
-    } catch (err) {
-      console.error("Erreur chargement coupons envoyés:", err);
-      tbody.innerHTML = '<tr><td colspan="4"><div class="table-state"><p>❌ Erreur</p></div></td></tr>';
-    }
-  }
-
-  async function loadCouponConsumedHistory() {
-    const tbody = document.getElementById("coupon-consumed-body");
-    tbody.innerHTML = '<tr><td colspan="3"><div class="table-state"><div class="loading-spinner"></div><p>Chargement…</p></div></td></tr>';
-    try {
-      const snapshot = await coupons.get();
-      const allCpns = [];
-      snapshot.forEach(doc => { allCpns.push({ id: doc.id, ...doc.data() }); });
-
-      const consumedRows = [];
-      allCpns.forEach(c => {
-        if (!c.usedBy || c.usedBy.length === 0) return;
-        const dates = c.usedByDates || {};
-        c.usedBy.forEach(uid => {
-          const member = allMembers.find(m => m.id === uid);
-          const memberName = member ? (member.first_name || member.email || uid) : uid;
-          const ts = dates[uid];
-          const dateStr = ts ? (ts.toDate ? ts.toDate() : new Date(ts)).toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
-          consumedRows.push({ memberName, couponTitle: c.title, dateStr });
-        });
-      });
-
-      if (consumedRows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3"><div class="table-state"><p>Aucun coupon consommé</p></div></td></tr>';
-      } else {
-        tbody.innerHTML = consumedRows.map(r => `<tr>
-          <td style="font-size:13px; font-weight:600;">👤 ${escHtml(r.memberName)}</td>
-          <td><div class="cell-event-title">🎟️ ${escHtml(r.couponTitle)}</div></td>
-          <td class="cell-date">${r.dateStr}</td>
-        </tr>`).join('');
-      }
-    } catch (err) {
-      console.error("Erreur chargement coupons consommés:", err);
-      tbody.innerHTML = '<tr><td colspan="3"><div class="table-state"><p>❌ Erreur</p></div></td></tr>';
-    }
-  }
-
-  // ================= HISTORIQUE & COMPTES RENDUS =================
-  
-  // Stockage local des comptes rendus lus
-  function getReadReports() {
-    try {
-      return JSON.parse(localStorage.getItem('rylia_read_reports') || '[]');
-    } catch { return []; }
-  }
-
-  function markReportAsRead(eventId) {
-    const read = getReadReports();
-    if (!read.includes(eventId)) {
-      read.push(eventId);
-      localStorage.setItem('rylia_read_reports', JSON.stringify(read));
-    }
-  }
-
-  function isReportRead(eventId) {
-    return getReadReports().includes(eventId);
-  }
-
-  let allHistoryEvents = [];
-  let eventStatsCache = {}; // { eventId: { participants: N, orders: N } }
-
-  async function loadEventHistory() {
-    try {
-      const snapshot = await events.get();
-      const tbody = document.getElementById("history-table-body");
+      var snapshot = await db.collection("clients").doc(CLIENT_ID)
+        .collection("participants").where("code", "==", codeInput).get();
 
       if (snapshot.empty) {
-        tbody.innerHTML = `<tr><td colspan="9"><div class="table-state"><p>Aucun événement dans l'historique</p></div></td></tr>`;
-        updateHistoryKPIs([], {});
+        showCodeMessage("❌ Code introuvable. Vérifiez le code saisi.", "error");
+        btnValidate.disabled = false;
         return;
       }
 
-      allHistoryEvents = [];
-      snapshot.forEach((doc) => {
-        const event = doc.data();
-        allHistoryEvents.push({
-          id: doc.id,
-          ...event,
-          deadlineDate: event.deadline.toDate(),
-          createdDate: event.createdAt ? event.createdAt.toDate() : null
-        });
-      });
+      var doc         = snapshot.docs[0];
+      var participant = doc.data();
+      var docId       = doc.id;
 
-      // Trier par date décroissante
-      allHistoryEvents.sort((a, b) => b.deadlineDate - a.deadlineDate);
-
-      // Afficher le tableau tout de suite (avec "..." pour les stats)
-      filterHistory();
-
-      // Charger les stats en arrière-plan
-      await computeEventStats();
-
-      // Re-render avec les vrais chiffres
-      filterHistory();
-
-    } catch (err) {
-      console.error("Erreur chargement historique:", err);
-      document.getElementById("history-table-body").innerHTML =
-        `<tr><td colspan="9"><div class="table-state"><p>❌ Erreur de chargement</p></div></td></tr>`;
-    }
-  }
-
-  // Récupère toutes les transactions de tous les membres, puis calcule participants/commandes par événement
-  async function computeEventStats() {
-    try {
-      eventStatsCache = {};
-
-      // Initialiser les stats pour chaque événement
-      allHistoryEvents.forEach(e => {
-        eventStatsCache[e.id] = { participants: new Set(), orders: 0 };
-      });
-
-      // Récupérer tous les membres
-      const membersSnap = await profiles.where("role", "==", "membre").get();
-
-      // Pour chaque membre, récupérer ses transactions
-      const promises = membersSnap.docs.map(async (memberDoc) => {
-        const memberId = memberDoc.id;
-        const txSnap = await profiles.doc(memberId).collection("transactions").get();
-
-        txSnap.forEach(txDoc => {
-          const tx = txDoc.data();
-          // Ne compter que les commandes (points > 0), pas les récompenses utilisées
-          if (!tx.date || !tx.points_added || tx.points_added <= 0) return;
-
-          const txDate = tx.date.toDate ? tx.date.toDate() : new Date(tx.date);
-
-          // Vérifier dans quel événement tombe cette transaction
-          allHistoryEvents.forEach(evt => {
-            const start = evt.createdDate || evt.deadlineDate;
-            const end = evt.deadlineDate;
-            if (txDate >= start && txDate <= end) {
-              eventStatsCache[evt.id].participants.add(memberId);
-              eventStatsCache[evt.id].orders++;
-            }
-          });
-        });
-      });
-
-      await Promise.all(promises);
-
-      // Convertir les Sets en nombres
-      Object.keys(eventStatsCache).forEach(id => {
-        eventStatsCache[id].participants = eventStatsCache[id].participants.size;
-      });
-
-    } catch (err) {
-      console.error("Erreur calcul stats événements:", err);
-    }
-  }
-
-  function getEventStats(eventId) {
-    return eventStatsCache[eventId] || null;
-  }
-
-  function filterHistory() {
-    const search = (document.getElementById("history-search").value || "").toLowerCase().trim();
-    const statusFilter = document.getElementById("history-filter-status").value;
-    const now = new Date();
-
-    const filtered = allHistoryEvents.filter(e => {
-      const matchSearch = !search || (e.title || "").toLowerCase().includes(search);
-      const isExpired = e.deadlineDate < now;
-      const matchStatus = !statusFilter
-        || (statusFilter === 'active' && !isExpired)
-        || (statusFilter === 'expired' && isExpired);
-      return matchSearch && matchStatus;
-    });
-
-    renderHistoryTable(filtered);
-  }
-
-  function renderHistoryTable(rows) {
-    const tbody = document.getElementById("history-table-body");
-    const countEl = document.getElementById("history-result-count");
-    const now = new Date();
-
-    updateHistoryKPIs(allHistoryEvents, eventStatsCache);
-
-    if (rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7"><div class="table-state"><p>Aucun événement trouvé.</p></div></td></tr>`;
-      countEl.style.display = "none";
-      return;
-    }
-
-    tbody.innerHTML = rows.map((e) => {
-      const isExpired = e.deadlineDate < now;
-      const stats = getEventStats(e.id);
-
-      const deadlineStr = e.deadlineDate.toLocaleDateString('fr-FR', {
-        day: 'numeric', month: 'short', year: 'numeric'
-      });
-
-      let optBadges = '';
-      if (e.options) {
-        if (e.options.doublePoints) optBadges += '<span class="badge-option double">🎯 x2</span>';
-        if (e.options.specialReward) optBadges += `<span class="badge-option reward">🎁 ${escHtml(e.options.rewardName || 'Récompense')}</span>`;
+      if (participant.remis) {
+        showCodeMessage("⚠️ Ce code a déjà été remis le " + (participant.remis_heure || "—") + ".", "error");
+        btnValidate.disabled = false;
+        return;
       }
-      if (!optBadges) optBadges = '<span style="font-size:12px; color:var(--gray);">—</span>';
 
-      const participantsHtml = stats !== null
-        ? `<span>${stats.participants}</span><span class="stat-icon">👤</span>`
-        : '<span style="font-size:12px; color:var(--gray);">…</span>';
+      if (isExpired(participant.date_expiration)) {
+        showCodeMessage("⏰ Ce code a expiré le " + (participant.date_expiration || "—") + ".", "warning");
+        btnValidate.disabled = false;
+        return;
+      }
 
-      const ordersHtml = stats !== null
-        ? `<span>${stats.orders}</span><span class="stat-icon">🧾</span>`
-        : '<span style="font-size:12px; color:var(--gray);">…</span>';
+      if (!isAvailable(participant.date)) {
+        var t = timeUntilAvailable(participant.date);
+        showCodeMessage("⏳ Ce gain n'est pas encore disponible. Le client doit revenir dans " + (t || "moins d'une minute") + ".", "warning");
+        btnValidate.disabled = false;
+        return;
+      }
 
-      return `
-        <tr style="cursor:pointer;" onclick="openReportModal('${e.id}')">
-          <td>
-            <div class="cell-event-title">${escHtml(e.title)}</div>
-            ${e.description ? `<div class="cell-event-desc">${sanitizeDesc(e.description)}</div>` : ''}
-          </td>
-          <td><span class="badge-status ${isExpired ? 'expired' : 'active'}">${isExpired ? 'Terminé' : 'En cours'}</span></td>
-          <td class="cell-stat">${participantsHtml}</td>
-          <td class="cell-stat">${ordersHtml}</td>
-          <td>${optBadges}</td>
-          <td class="cell-date">${deadlineStr}</td>
-          <td>
-            <button class="btn-report" onclick="event.stopPropagation(); openReportModal('${e.id}')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-              </svg>
-              Voir
-            </button>
-          </td>
-        </tr>`;
-    }).join("");
+      var now     = new Date();
+      var heure   = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      var dateStr = now.toLocaleDateString("fr-FR");
 
-    countEl.style.display = "block";
-    countEl.textContent = `${rows.length} événement${rows.length > 1 ? 's' : ''}`;
-  }
+      await db.collection("clients").doc(CLIENT_ID)
+        .collection("participants").doc(docId)
+        .update({ remis: true, remis_heure: dateStr + " à " + heure, remis_timestamp: firebase.firestore.FieldValue.serverTimestamp() });
 
-  function updateHistoryKPIs() { /* KPIs removed */ }
-
-  function openReportModalById(eventId) {
-    const event = allHistoryEvents.find(e => e.id === eventId);
-    if (event) openReportModal(event);
-  }
-
-  function openReportModal(eventOrId) {
-    let event;
-    if (typeof eventOrId === 'string') {
-      event = allHistoryEvents.find(e => e.id === eventOrId);
-      if (!event) return;
-    } else {
-      event = eventOrId;
-    }
-
-    // Marquer comme lu
-    markReportAsRead(event.id);
-
-    // Re-render la table pour mettre à jour le statut lu
-    filterHistory();
-
-    const now = new Date();
-    const isExpired = event.deadlineDate < now;
-
-    // Durée de l'événement
-    const created = event.createdDate || event.deadlineDate;
-    const durationMs = event.deadlineDate - created;
-    const durationDays = Math.max(1, Math.ceil(durationMs / (1000 * 60 * 60 * 24)));
-
-    // Temps écoulé depuis fin
-    let elapsedStr = '';
-    if (isExpired) {
-      const diff = now - event.deadlineDate;
-      const daysAgo = Math.floor(diff / (1000 * 60 * 60 * 24));
-      if (daysAgo === 0) elapsedStr = "Terminé aujourd'hui";
-      else if (daysAgo === 1) elapsedStr = "Terminé hier";
-      else elapsedStr = `Terminé il y a ${daysAgo} jours`;
-    } else {
-      const diff = event.deadlineDate - now;
-      const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-      elapsedStr = `Se termine dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
-    }
-
-    // Remplir le titre
-    document.getElementById("report-title").textContent = event.title;
-    document.getElementById("report-subtitle").textContent = elapsedStr;
-
-    // Status badge
-    const statusEl = document.getElementById("report-status");
-    if (isExpired) {
-      statusEl.textContent = "TERMINÉ";
-      statusEl.className = "report-status-badge expired";
-    } else {
-      statusEl.textContent = "EN COURS";
-      statusEl.className = "report-status-badge active";
-    }
-
-    // Description
-    const descContainer = document.getElementById("report-desc-container");
-    if (event.description) {
-      descContainer.style.display = "block";
-      document.getElementById("report-description").innerHTML = sanitizeDesc(event.description);
-    } else {
-      descContainer.style.display = "none";
-    }
-
-    // KPIs
-    const startDateObj = event.startDate ? (event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate)) : null;
-    const dateDebut = startDateObj
-      ? startDateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-      : '—';
-    const dateFin = event.deadlineDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const stats = getEventStats(event.id);
-    const evtParticipants = stats ? stats.participants : '—';
-    const evtOrders = stats ? stats.orders : '—';
-
-    document.getElementById("report-kpis").innerHTML = `
-      <div class="report-kpi accent">
-        <div class="report-kpi-value">${evtParticipants}</div>
-        <div class="report-kpi-label">Participants</div>
-      </div>
-      <div class="report-kpi accent">
-        <div class="report-kpi-value">${evtOrders}</div>
-        <div class="report-kpi-label">Commandes</div>
-      </div>
-      <div class="report-kpi">
-        <div class="report-kpi-value">${durationDays}j</div>
-        <div class="report-kpi-label">Durée</div>
-      </div>
-      <div class="report-kpi">
-        <div class="report-kpi-value" style="font-size:13px;">${dateDebut}</div>
-        <div class="report-kpi-label">🟢 Début</div>
-      </div>
-      <div class="report-kpi">
-        <div class="report-kpi-value" style="font-size:13px;">${dateFin}</div>
-        <div class="report-kpi-label">🔴 ${isExpired ? 'Fin' : 'Fin prévue'}</div>
-      </div>
-      <div class="report-kpi">
-        <div class="report-kpi-value">${event.options && event.options.doublePoints ? 'x2' : 'x1'}</div>
-        <div class="report-kpi-label">Multiplicateur pts</div>
-      </div>
-    `;
-
-    // Options détails
-    const optionsHtml = [];
-
-    const hasDouble = event.options && event.options.doublePoints;
-    optionsHtml.push(`
-      <div class="report-option-row">
-        <div class="report-option-check ${hasDouble ? 'on' : 'off'}">${hasDouble ? '✓' : '—'}</div>
-        <div class="report-option-label">
-          🎯 Points x2 sur les commandes
-          ${hasDouble ? '<span style="color: var(--success); font-weight: 600; margin-left: 6px;">Activé</span>' : '<span style="color: var(--gray);">Désactivé</span>'}
-        </div>
-      </div>
-    `);
-
-    const hasReward = event.options && event.options.specialReward;
-    optionsHtml.push(`
-      <div class="report-option-row">
-        <div class="report-option-check ${hasReward ? 'on' : 'off'}">${hasReward ? '✓' : '—'}</div>
-        <div class="report-option-label">
-          🎁 Récompense spéciale
-          ${hasReward 
-            ? `<span style="color: #8B5CF6; font-weight: 600; margin-left: 6px;">${escHtml(event.options.rewardName || '')} (${event.options.rewardPoints || 0} pts)</span>` 
-            : '<span style="color: var(--gray);">Désactivé</span>'}
-        </div>
-      </div>
-    `);
-
-    document.getElementById("report-options").innerHTML = optionsHtml.join('');
-
-    // Afficher la modale
-    document.getElementById("report-modal").classList.add("show");
-  }
-
-  function closeReportModal() {
-    document.getElementById("report-modal").classList.remove("show");
-  }
-
-  function handleReportBackdropClick(e) {
-    if (e.target === document.getElementById("report-modal")) closeReportModal();
-  }
-
-  // Refresh uniquement le badge de l'onglet (léger, sans re-render)
-  async function refreshHistoryBadge() { /* no-op: history tab removed */ }
-
-  // ================= COUPONS =================
-
-  // Remplir le select membres dans le formulaire coupon
-  function populateCouponMemberSelect() {
-    const sel = document.getElementById("coupon-member-select");
-    sel.innerHTML = '<option value="">— Sélectionnez —</option>';
-    allMembers.forEach(m => {
-      const opt = document.createElement("option");
-      opt.value = m.id;
-      opt.textContent = `${m.first_name} (${m.email})`;
-      sel.appendChild(opt);
-    });
-    // Masquer le select si "tous" est sélectionné
-    toggleCouponMemberSelect();
-  }
-
-  function toggleCouponMemberSelect() {
-    const assign = document.getElementById("coupon-assign").value;
-    document.getElementById("coupon-member-wrap").style.display =
-      assign === "specific" ? "block" : "none";
-  }
-
-  // Créer un coupon
-  async function createCoupon() {
-    const confirmed = await requirePassword("Confirmez votre mot de passe pour envoyer un coupon.");
-    if (!confirmed) return;
-
-    const title   = document.getElementById("coupon-title").value.trim();
-    const desc    = document.getElementById("coupon-desc").value.trim();
-    const assign  = document.getElementById("coupon-assign").value;
-    const expiry  = document.getElementById("coupon-expiry").value;
-    const memberId = document.getElementById("coupon-member-select").value;
-
-    if (!title) { alert("⚠️ Veuillez saisir un nom pour le coupon."); return; }
-    if (assign === "specific" && !memberId) {
-      alert("⚠️ Veuillez sélectionner un membre."); return;
-    }
-
-    const member = assign === "specific" ? allMembers.find(m => m.id === memberId) : null;
-
-    const btn = document.getElementById("btn-create-coupon");
-    btn.disabled = true; btn.textContent = "⏳ Création…";
-
-    try {
-      await coupons.add({
-        title,
-        description: desc,
-        assignedTo:   assign === "all" ? "all" : memberId,
-        assignedToName: assign === "all" ? "Tous les membres" : (member ? member.first_name : "—"),
-        expiresAt:    expiry ? new Date(expiry) : null,
-        active:       true,
-        usedBy:       [],
-        createdAt:    firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Reset form
-      document.getElementById("coupon-title").value   = "";
-      document.getElementById("coupon-desc").value    = "";
-      document.getElementById("coupon-expiry").value  = "";
-      document.getElementById("coupon-assign").value  = "all";
-      document.getElementById("coupon-member-select").value = "";
-      toggleCouponMemberSelect();
-
-      showToast(`✅ Coupon "${title}" créé !`);
-      loadActiveCouponsList();
+      showCodeMessage("✅ Code validé ! Gain de " + (participant.gain || "—") + " remis à " + (participant.nom || "—") + ".", "success");
+      setTimeout(function() { closeCodeModal(); }, 2000);
 
     } catch (err) {
-      console.error(err);
-      alert("❌ Erreur : " + err.message);
+      console.error("Erreur validation code :", err);
+      showCodeMessage("Erreur lors de la validation. Réessayez.", "error");
     } finally {
-      btn.disabled = false; btn.textContent = "🎟️ Créer le coupon";
+      btnValidate.disabled = false;
     }
   }
 
-  // ---- Coupons dans la modale client ----
+  document.addEventListener("click", function(e) {
+    if (e.target === document.getElementById("code-modal")) closeCodeModal();
+  });
 
-  async function loadModalCoupons(clientId) {
-    const container = document.getElementById("modal-coupons-list");
-    container.innerHTML = '<p class="no-rewards">Chargement…</p>';
-    try {
-      const now = new Date();
-      const snapshot = await coupons.where("active", "==", true).get();
-
-      const available = [];
-      snapshot.forEach(doc => {
-        const c = doc.data();
-        const expired = c.expiresAt && c.expiresAt.toDate() < now;
-        const used    = c.usedBy && c.usedBy.includes(clientId);
-        const assigned = c.assignedTo === "all" || c.assignedTo === clientId;
-        if (!expired && !used && assigned) available.push({ id: doc.id, ...c });
-      });
-
-      if (available.length === 0) {
-        container.innerHTML = '<p class="no-rewards">Aucun coupon disponible pour ce client.</p>';
-        return;
-      }
-
-      container.innerHTML = available.map(c => `
-        <button class="btn-coupon-use" onclick="useClientCoupon('${c.id}', '${escHtml(c.title)}')">
-          <span>
-            <strong>🎟️ ${escHtml(c.title)}</strong>
-            ${c.description ? `<span style="color:var(--gray); font-size:12px; margin-left:6px;">${escHtml(c.description).replace(/\n/g, '<br>')}</span>` : ''}
-          </span>
-          <span class="coupon-use-badge">Utiliser</span>
-        </button>
-      `).join('');
-    } catch (err) {
-      console.error(err);
-      container.innerHTML = '<p class="no-rewards">Erreur de chargement.</p>';
-    }
+  // ---- Helpers ----
+  function isExpired(dateStr) {
+    if (!dateStr) return false;
+    var parts = dateStr.split("/");
+    return new Date(parts[2] + "-" + parts[1] + "-" + parts[0]) < new Date(new Date().toDateString());
   }
 
-  async function useClientCoupon(couponId, couponTitle) {
-    if (!currentMember) return;
-    if (!confirm(`Valider l'utilisation du coupon "${couponTitle}" pour ${currentMember.first_name} ?`)) return;
-
-    try {
-      // Marquer comme utilisé par ce client
-      await coupons.doc(couponId).update({
-        usedBy: firebase.firestore.FieldValue.arrayUnion(currentMember.id),
-        [`usedByDates.${currentMember.id}`]: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Ajouter une ligne dans l'historique du client
-      await profiles.doc(currentMember.id).collection("transactions").add({
-        amount_euros: 0,
-        points_added: 0,
-        description: `🎟️ Coupon utilisé : ${couponTitle}`,
-        date: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      showFeedback(`✓ Coupon "${couponTitle}" utilisé avec succès !`, "success");
-      showToast(`🎟️ Coupon — ${currentMember.first_name}`);
-
-      // Recharger la liste des coupons de la modale
-      loadModalCoupons(currentMember.id);
-    } catch (err) {
-      console.error(err);
-      showFeedback("Erreur lors de l'utilisation du coupon.", "error");
-    }
+  // Vérifie si 24h se sont écoulées depuis le tour de roue
+  function isAvailable(date) {
+    if (!date) return true;
+    var d = date.toDate ? date.toDate() : new Date(date);
+    return (new Date() - d) >= 24 * 60 * 60 * 1000;
   }
 
-  // ================= RÉCOMPENSES (FIRESTORE) =================
-
-  // Charger les récompenses depuis Firestore et mettre à jour REWARD_TIERS
-  async function loadRewardsFromFirestore() {
-    try {
-      const snapshot = await rewards.orderBy("points", "asc").get();
-      if (!snapshot.empty) {
-        REWARD_TIERS = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        MAX_POINTS = REWARD_TIERS.length > 0 ? REWARD_TIERS[REWARD_TIERS.length - 1].points : 260;
-      }
-    } catch (err) {
-      console.error("Erreur chargement récompenses Firestore:", err);
-    }
+  // Renvoie le temps restant avant que le gain soit disponible (ex: "5h32" ou "12 min")
+  function timeUntilAvailable(date) {
+    if (!date) return null;
+    var d = date.toDate ? date.toDate() : new Date(date);
+    var availableAt = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+    var diffMs = availableAt - new Date();
+    if (diffMs <= 0) return null;
+    var hours   = Math.floor(diffMs / (1000 * 60 * 60));
+    var minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return hours + "h" + (minutes < 10 ? "0" + minutes : minutes);
+    return minutes + " min";
   }
 
-  // Créer une récompense
-  async function createReward() {
-    const confirmed = await requirePassword("Confirmez votre mot de passe pour modifier les récompenses.");
-    if (!confirmed) return;
-
-    const title    = document.getElementById("reward-title-input").value.trim();
-    const desc     = document.getElementById("reward-desc-input").value.trim();
-    const points   = parseInt(document.getElementById("reward-points-input").value);
-    const imageUrl = document.getElementById("reward-image-input").value.trim();
-
-    if (!title || !points || points <= 0) {
-      alert("⚠️ Veuillez saisir un nom et un nombre de points valide.");
-      return;
-    }
-
-    const btn = document.getElementById("btn-create-reward");
-    btn.disabled = true; btn.textContent = "⏳ Création…";
-
-    try {
-      await rewards.add({
-        title,
-        desc: desc || "",
-        points,
-        imageUrl: imageUrl || "",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      // Reset form
-      document.getElementById("reward-title-input").value = "";
-      document.getElementById("reward-desc-input").value = "";
-      document.getElementById("reward-points-input").value = "";
-      document.getElementById("reward-image-input").value = "";
-
-      showToast(`✅ Récompense "${title}" ajoutée !`);
-      await loadRewardsFromFirestore();
-      loadRewardsList();
-    } catch (err) {
-      console.error(err);
-      alert("❌ Erreur : " + err.message);
-    } finally {
-      btn.disabled = false; btn.textContent = "⭐ Ajouter la récompense";
-    }
-  }
-
-  // Charger la liste des récompenses
-  async function loadRewardsList() {
-    const container = document.getElementById("rewards-list");
-    container.innerHTML = '<div class="events-empty"><p>Chargement…</p></div>';
-
-    try {
-      await loadRewardsFromFirestore();
-
-      if (REWARD_TIERS.length === 0) {
-        container.innerHTML = '<div class="events-empty"><p>Aucune récompense configurée.</p></div>';
-        return;
-      }
-
-      container.innerHTML = '<div class="reward-grid" id="reward-grid-inner"></div>';
-      const grid = document.getElementById("reward-grid-inner");
-
-      REWARD_TIERS.forEach(r => {
-        const card = document.createElement("div");
-        card.className = "reward-card";
-        card.innerHTML = `
-          <div class="reward-card-header">
-            ${r.imageUrl
-              ? `<img src="${escHtml(r.imageUrl)}" class="reward-card-img" onerror="this.outerHTML='<div class=\\'reward-card-icon\\'>⭐</div>'">`
-              : '<div class="reward-card-icon">⭐</div>'
-            }
-            <div class="reward-card-info">
-              <div class="reward-card-title">${escHtml(r.title)}</div>
-              <div class="reward-card-desc">${escHtml(r.desc || '—')}</div>
-            </div>
-            <span class="reward-card-pts">${r.points} pts</span>
-          </div>
-          <div class="reward-card-actions">
-            ${r.id ? `<button class="btn-reward-delete" onclick="deleteReward('${r.id}', '${escHtml(r.title)}')">🗑️ Supprimer</button>` : '<span style="font-size:12px; color:var(--gray); font-style:italic;">Palier par défaut</span>'}
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    } catch (err) {
-      console.error(err);
-      container.innerHTML = '<div class="events-empty"><p>❌ Erreur de chargement</p></div>';
-    }
-  }
-
-  // Supprimer une récompense
-  async function deleteReward(rewardId, title) {
-    if (!confirm(`Supprimer la récompense "${title}" ?\n\nCette action est irréversible.`)) return;
-    try {
-      await rewards.doc(rewardId).delete();
-      showToast("✅ Récompense supprimée");
-      await loadRewardsFromFirestore();
-      loadRewardsList();
-    } catch (err) {
-      alert("❌ Erreur : " + err.message);
-    }
-  }
-
-  // ================= HELPERS =================
   function formatDate(ts) {
     if (!ts) return "—";
-    const d = ts.toDate ? ts.toDate() : new Date(ts);
-    return d.toLocaleDateString("fr-FR", {
-      day: "2-digit", month: "short", year: "numeric"
-    });
+    var d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
   function escHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  // Éditeur riche - commande
-  function rteCmd(cmd) {
-    document.execCommand(cmd, false, null);
-    document.getElementById('event-description').focus();
+  // ================= CONFIGURATION ROUE =================
+  var wheelPrizes = [];
+
+  async function loadWheelConfig() {
+    if (!CLIENT_ID) return;
+    try {
+      var doc = await db.collection("clients").doc(CLIENT_ID).collection("config").doc("wheel").get();
+      if (doc.exists && doc.data().prizes && doc.data().prizes.length > 0) {
+        wheelPrizes = doc.data().prizes;
+      } else {
+        wheelPrizes = [
+          { label: "Menu taille M",    chance: 2.0 },
+          { label: "-10% commande",    chance: 2.5 },
+          { label: "Dessert au choix", chance: 2.5 },
+          { label: "-5% commande",     chance: 6.0 },
+          { label: "x4 Snack",         chance: 7.0 },
+          { label: "Une boisson",      chance: 80.0 }
+        ];
+      }
+    } catch (err) {
+      console.warn("Config roue non trouvée, valeurs par défaut.", err);
+      wheelPrizes = [
+        { label: "Menu taille M",    chance: 2.0 },
+        { label: "-10% commande",    chance: 2.5 },
+        { label: "Dessert au choix", chance: 2.5 },
+        { label: "-5% commande",     chance: 6.0 },
+        { label: "x4 Snack",         chance: 7.0 },
+        { label: "Une boisson",      chance: 80.0 }
+      ];
+    }
+    renderWheelPrizeRows();
+    updateWheelProbTotal();
   }
 
-  // Sanitize HTML - n'autorise que les balises sûres
-  function sanitizeDesc(html) {
-    if (!html) return '';
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    // Supprimer les scripts et événements
-    tmp.querySelectorAll('script,style,iframe,object,embed').forEach(el => el.remove());
-    tmp.querySelectorAll('*').forEach(el => {
-      [...el.attributes].forEach(attr => {
-        if (attr.name.startsWith('on') || attr.name === 'style' && attr.value.includes('expression')) {
-          el.removeAttribute(attr.name);
-        }
-      });
-    });
-    return tmp.innerHTML;
-  }
-</script>
-<!-- MODAL CONFIRMATION MDP -->
-<div class="pwd-modal-overlay" id="pwd-modal-overlay">
-  <div class="pwd-modal">
-    <h3>🔒 Confirmation requise</h3>
-    <p id="pwd-modal-msg">Entrez votre mot de passe pour confirmer cette action.</p>
-    <input type="password" id="pwd-modal-input" placeholder="Votre mot de passe" autocomplete="current-password">
-    <div class="pwd-modal-error" id="pwd-modal-error"></div>
-    <div class="pwd-modal-actions">
-      <button class="pwd-modal-cancel" onclick="closePwdModal()">Annuler</button>
-      <button class="pwd-modal-confirm" id="pwd-modal-confirm" onclick="confirmPwdModal()">Confirmer</button>
-    </div>
-  </div>
-</div>
-
-<!-- FAB Scanner QR -->
-<button class="fab-scan" id="fab-scan" onclick="openQrScanner()" title="Scanner un QR code">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-    <line x1="12" y1="2" x2="12" y2="6"/><line x1="2" y1="12" x2="6" y2="12"/>
-    <line x1="18" y1="12" x2="22" y2="12"/><line x1="12" y1="18" x2="12" y2="22"/>
-  </svg>
-</button>
-
-<!-- QR Scanner Modal -->
-<div class="qr-modal-overlay" id="qr-modal" onclick="if(event.target===this)closeQrScanner()">
-  <div class="qr-modal-box">
-    <div class="qr-modal-header">
-      <h3>📷 Scanner un QR code</h3>
-      <button class="modal-close" onclick="closeQrScanner()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div id="qr-reader"></div>
-    <div class="qr-status" id="qr-status">Pointez la caméra vers le QR code du client</div>
-    <div class="qr-modal-footer">
-      <button class="btn-qr-close" onclick="closeQrScanner()">Fermer</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script>
-  let html5QrCode = null;
-  let qrScannerOpen = false;
-
-  function openQrScanner() {
-    const modal = document.getElementById('qr-modal');
-    const statusEl = document.getElementById('qr-status');
-    statusEl.textContent = 'Démarrage de la caméra…';
-    statusEl.className = 'qr-status';
-    modal.classList.add('show');
-    qrScannerOpen = true;
-
-    html5QrCode = new Html5Qrcode("qr-reader");
-
-    html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
-      onQrCodeSuccess,
-      () => {} // ignore scan failures
-    ).then(() => {
-      statusEl.textContent = 'Pointez la caméra vers le QR code du client';
-    }).catch(err => {
-      console.error('QR camera error:', err);
-      statusEl.textContent = '❌ Impossible d\'accéder à la caméra';
-      statusEl.className = 'qr-status error';
+  function renderWheelPrizeRows() {
+    var container = document.getElementById('prizes-container');
+    if (!container) return;
+    container.innerHTML = '';
+    wheelPrizes.forEach(function(p, i) {
+      var row = document.createElement('div');
+      row.className = 'prize-row';
+      row.innerHTML = '<input type="text" value="' + escHtml(p.label) + '" placeholder="Nom du lot" onchange="updateWheelPrize(' + i + ',\'label\',this.value)">'
+        + '<input type="number" value="' + p.chance + '" min="0" max="100" step="0.1" placeholder="%" onchange="updateWheelPrize(' + i + ',\'chance\',this.value)" oninput="updateWheelProbTotal()">'
+        + '<input type="number" value="' + (p.maxQty || '') + '" min="0" step="1" placeholder="∞" onchange="updateWheelPrize(' + i + ',\'maxQty\',this.value)">'
+        + '<button class="btn-remove-prize" onclick="removeWheelPrize(' + i + ')" title="Supprimer">×</button>';
+      container.appendChild(row);
     });
   }
 
-  function onQrCodeSuccess(decodedText) {
-    if (!qrScannerOpen) return;
-    const statusEl = document.getElementById('qr-status');
+  function updateWheelPrize(index, field, value) {
+    if (field === 'chance') { wheelPrizes[index].chance = parseFloat(value) || 0; }
+    else if (field === 'maxQty') { wheelPrizes[index].maxQty = value ? parseInt(value) : null; }
+    else { wheelPrizes[index][field] = value; }
+    updateWheelProbTotal();
+  }
 
-    // Chercher le membre par short_code ou email
-    const code = decodedText.trim();
-    const member = allMembers.find(m =>
-      (m.short_code && m.short_code.toLowerCase() === code.toLowerCase()) ||
-      (m.email && m.email.toLowerCase() === code.toLowerCase()) ||
-      (m.id === code)
-    );
+  function removeWheelPrize(index) {
+    if (wheelPrizes.length <= 2) { showToast("Il faut au minimum 2 lots."); return; }
+    wheelPrizes.splice(index, 1);
+    renderWheelPrizeRows();
+    updateWheelProbTotal();
+  }
 
-    if (member) {
-      statusEl.textContent = `✅ ${member.first_name} trouvé !`;
-      statusEl.className = 'qr-status found';
+  function addPrizeRow() {
+    if (wheelPrizes.length >= 12) { showToast("Maximum 12 lots."); return; }
+    wheelPrizes.push({ label: "", chance: 0, maxQty: null });
+    renderWheelPrizeRows();
+    updateWheelProbTotal();
+  }
 
-      // Vibrer si possible
-      if (navigator.vibrate) navigator.vibrate(100);
+  function updateWheelProbTotal() {
+    var total = wheelPrizes.reduce(function(s, p) { return s + (p.chance || 0); }, 0);
+    var el = document.getElementById('prob-total');
+    if (!el) return;
+    var isOdd = wheelPrizes.length % 2 !== 0;
+    var isBadTotal = Math.abs(total - 100) > 0.1;
+    var text = "Total : " + total.toFixed(1) + "%";
+    if (isOdd) text += "  ⚠ Nombre de lots impair (" + wheelPrizes.length + ") — ajoutez ou retirez un lot";
+    el.textContent = text;
+    el.className = (isBadTotal || isOdd) ? 'prob-total warn' : 'prob-total';
+  }
 
-      // Fermer le scanner et ouvrir la modale client après un court délai
-      setTimeout(() => {
-        closeQrScanner();
-        openModal(member.id);
-      }, 600);
-    } else {
-      statusEl.textContent = `❌ Aucun membre trouvé pour "${code}"`;
-      statusEl.className = 'qr-status error';
+  async function saveWheelConfig() {
+    if (!CLIENT_ID) return;
+    if (wheelPrizes.length % 2 !== 0) { showToast("Le nombre de lots doit être pair pour alterner les couleurs sur la roue."); return; }
+    var total = wheelPrizes.reduce(function(s, p) { return s + (p.chance || 0); }, 0);
+    if (Math.abs(total - 100) > 0.5) { showToast("La somme des probabilités doit faire 100% (actuellement " + total.toFixed(1) + "%)."); return; }
+    if (wheelPrizes.some(function(p) { return !p.label || p.label.trim() === ''; })) { showToast("Chaque lot doit avoir un nom."); return; }
 
-      // Reset après 2s pour re-scanner
-      setTimeout(() => {
-        if (qrScannerOpen) {
-          statusEl.textContent = 'Pointez la caméra vers le QR code du client';
-          statusEl.className = 'qr-status';
-        }
-      }, 2000);
+    var btn = document.getElementById('btn-save-config');
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement…';
+
+    try {
+      var prizesToSave = wheelPrizes.map(function(p) {
+        var obj = { label: p.label.trim(), chance: p.chance };
+        if (p.maxQty) obj.maxQty = p.maxQty;
+        return obj;
+      });
+      await db.collection("clients").doc(CLIENT_ID).collection("config").doc("wheel").set({
+        prizes: prizesToSave,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast("✅ Configuration de la roue enregistrée !");
+    } catch (err) {
+      console.error("Erreur sauvegarde config roue:", err);
+      showToast("❌ Erreur lors de l'enregistrement.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Enregistrer';
     }
   }
 
-  function closeQrScanner() {
-    qrScannerOpen = false;
-    const modal = document.getElementById('qr-modal');
-    modal.classList.remove('show');
-
-    if (html5QrCode) {
-      html5QrCode.stop().then(() => {
-        html5QrCode.clear();
-        html5QrCode = null;
-      }).catch(() => {
-        html5QrCode = null;
-      });
-    }
+  // ================= TOAST =================
+  var toastTimer;
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { t.classList.remove('show'); }, 3000);
   }
 </script>
-
 </body>
 </html>
- 
