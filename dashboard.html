@@ -152,6 +152,7 @@
     .btn-delete-all:hover { background: var(--danger); color: white; }
     .checkbox-remis:disabled { opacity: 0.4; cursor: not-allowed; }
     .expired-label { font-size: 11px; color: var(--danger); font-weight: 600; }
+    .pending-label { font-size: 11px; color: var(--gray); font-weight: 600; white-space: nowrap; }
 
     /* ---- Table ---- */
     .table-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -617,8 +618,10 @@
     }
 
     tbody.innerHTML = rows.map(p => {
-      const expired  = isExpired(p.date_expiration);
-      const rowClass = p.remis ? "row-remis" : "";
+      const expired   = isExpired(p.date_expiration);
+      const available = isAvailable(p.date);
+      const remaining = available ? null : timeUntilAvailable(p.date);
+      const rowClass  = p.remis ? "row-remis" : "";
       const expBadge = p.date_expiration
         ? '<span class="badge-exp ' + (expired ? 'expired' : 'valid') + '">' + (expired ? '⚠ ' : '') + escHtml(p.date_expiration) + '</span>'
         : '<span style="color:var(--gray)">—</span>';
@@ -627,7 +630,9 @@
         ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" checked onchange="toggleRemis(\'' + p.id + '\', this)"><span class="remis-time">' + escHtml(p.remis_heure || "") + '</span></div>'
         : expired
           ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" disabled><span class="expired-label">Expiré</span></div>'
-          : '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" onchange="toggleRemis(\'' + p.id + '\', this)"></div>';
+          : !available
+            ? '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" disabled title="Disponible dans ' + remaining + '"><span class="pending-label">Dans ' + remaining + '</span></div>'
+            : '<div class="remis-wrap"><input type="checkbox" class="checkbox-remis" onchange="toggleRemis(\'' + p.id + '\', this)"></div>';
 
       return '<tr class="' + rowClass + '">'
         + '<td class="cell-person"><strong>' + escHtml(p.nom || "—") + '</strong><span>' + escHtml(p.email || "—") + '</span></td>'
@@ -656,6 +661,17 @@
   }
 
   async function toggleRemis(docId, checkbox) {
+    // Sécurité : on empêche de cocher "remis" pendant les 24h post-tirage
+    if (checkbox.checked) {
+      const participant = allParticipants.find(p => p.id === docId);
+      if (participant && !isAvailable(participant.date)) {
+        checkbox.checked = false;
+        const t = timeUntilAvailable(participant.date);
+        showToast("⏳ Ce gain ne sera disponible que dans " + (t || "moins d'une minute") + ".");
+        return;
+      }
+    }
+
     checkbox.disabled = true;
     const wrap    = checkbox.closest(".remis-wrap");
     const isRemis = checkbox.checked;
@@ -830,6 +846,13 @@
         return;
       }
 
+      if (!isAvailable(participant.date)) {
+        var t = timeUntilAvailable(participant.date);
+        showCodeMessage("⏳ Ce gain n'est pas encore disponible. Le client doit revenir dans " + (t || "moins d'une minute") + ".", "warning");
+        btnValidate.disabled = false;
+        return;
+      }
+
       var now     = new Date();
       var heure   = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
       var dateStr = now.toLocaleDateString("fr-FR");
@@ -858,6 +881,26 @@
     if (!dateStr) return false;
     var parts = dateStr.split("/");
     return new Date(parts[2] + "-" + parts[1] + "-" + parts[0]) < new Date(new Date().toDateString());
+  }
+
+  // Vérifie si 24h se sont écoulées depuis le tour de roue
+  function isAvailable(date) {
+    if (!date) return true;
+    var d = date.toDate ? date.toDate() : new Date(date);
+    return (new Date() - d) >= 24 * 60 * 60 * 1000;
+  }
+
+  // Renvoie le temps restant avant que le gain soit disponible (ex: "5h32" ou "12 min")
+  function timeUntilAvailable(date) {
+    if (!date) return null;
+    var d = date.toDate ? date.toDate() : new Date(date);
+    var availableAt = new Date(d.getTime() + 24 * 60 * 60 * 1000);
+    var diffMs = availableAt - new Date();
+    if (diffMs <= 0) return null;
+    var hours   = Math.floor(diffMs / (1000 * 60 * 60));
+    var minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return hours + "h" + (minutes < 10 ? "0" + minutes : minutes);
+    return minutes + " min";
   }
 
   function formatDate(ts) {
@@ -995,4 +1038,3 @@
 </script>
 </body>
 </html>
- 
